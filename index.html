@@ -1,748 +1,580 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>아르떼조명 CS상담용 이미지</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SPEAK BRAWL — 영어 배틀</title>
 <style>
-  :root{
-    --bg:#faf9f6; --surface:#ffffff; --line:#e8e6df; --line-strong:#d8d5cc;
-    --ink:#2b2a26; --muted:#86847c; --hint:#a6a39a;
-    --accent:#b07b54; --accent-soft:#f1e7dd; --accent-ink:#6e4a2d;
-    --ok:#2f7d5b; --ok-soft:#e3f2ea; --danger:#b3493f; --danger-soft:#f6e6e3;
-    --warn:#8a6d1f; --warn-soft:#f7efd8;
-    --radius:14px; --shadow:0 1px 2px rgba(40,38,32,.04),0 8px 24px rgba(40,38,32,.06);
-    --font:'Pretendard','Apple SD Gothic Neo','Noto Sans KR',-apple-system,BlinkMacSystemFont,sans-serif;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%}
-  body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;font-size:15px;line-height:1.55}
-  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
-  input,textarea{font-family:inherit;font-size:14px}
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+:root{
+  --navy:#1B1F3B; --navy2:#252B54; --deep:#12152E;
+  --yellow:#FFC93C; --orange:#FF8A00; --red:#FF3B5C;
+  --blue:#00C2FF; --purple:#A64DFF; --green:#3DDC5C;
+  --pink:#FF5FA2; --text:#FFFFFF; --sub:#9BA3D0;
+}
+body{ background:var(--deep); font-family:'Pretendard',-apple-system,system-ui,sans-serif;
+  color:var(--text); display:flex; justify-content:center; min-height:100vh; overflow-x:hidden; }
+#app{ width:100%; max-width:440px; min-height:100vh; padding:14px 14px 40px; position:relative;
+  background:radial-gradient(circle at 50% 0%, #2A2F5E 0%, #12152E 60%); }
+button{ font-family:inherit; cursor:pointer; border:none; }
+button:active{ transform:scale(.95) translateY(2px); }
+button:disabled{ cursor:default; }
 
-  .app{display:flex;flex-direction:column;min-height:100vh}
-  header.topbar{position:sticky;top:0;z-index:30;background:rgba(250,249,246,.86);backdrop-filter:saturate(160%) blur(12px);border-bottom:1px solid var(--line)}
-  .topbar-inner{max-width:1320px;margin:0 auto;padding:14px 22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-  .brand{display:flex;align-items:center;gap:11px;flex-shrink:0}
-  .brand .logo{width:34px;height:34px;border-radius:9px;background:var(--accent);display:grid;place-items:center;color:#fff;font-weight:700;font-size:15px}
-  .brand h1{font-size:16px;font-weight:700;letter-spacing:-.2px}
-  .brand .sub{font-size:11.5px;color:var(--muted);font-weight:500;margin-top:1px}
+/* ===== 브롤 공통: 두꺼운 테두리 + 하단 그림자 (3D 버튼) ===== */
+.brawl{ border:3px solid rgba(0,0,0,.45); border-radius:16px;
+  box-shadow:0 5px 0 rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.25); }
+.stroke{ -webkit-text-stroke:2px rgba(0,0,0,.6); paint-order:stroke fill; }
 
-  .search-wrap{flex:1;min-width:200px;position:relative;display:flex;align-items:center}
-  .search-wrap svg{position:absolute;left:13px;width:17px;height:17px;color:var(--hint);pointer-events:none}
-  .search-wrap input{width:100%;height:42px;padding:0 38px;border:1px solid var(--line-strong);border-radius:11px;background:var(--surface);outline:none;font-size:14.5px;transition:.15s}
-  .search-wrap input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-  .search-clear{position:absolute;right:8px;width:24px;height:24px;border-radius:6px;display:none;place-items:center;color:var(--muted)}
-  .search-clear:hover{background:var(--line)}
-  .search-clear.show{display:grid}
+@keyframes pop{0%{transform:scale(.5);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+@keyframes glow{0%,100%{box-shadow:0 0 12px rgba(255,201,60,.5)}50%{box-shadow:0 0 26px rgba(255,201,60,.95)}}
+@keyframes coinUp{0%{transform:translateY(0) scale(.4);opacity:0}25%{opacity:1}100%{transform:translateY(-110px) scale(1.2);opacity:0}}
+@keyframes ring{0%{transform:scale(.3);opacity:.9}100%{transform:scale(2.8);opacity:0}}
+@keyframes conf{0%{transform:translateY(-50px) rotate(0);opacity:1}100%{transform:translateY(420px) rotate(720deg);opacity:0}}
+@keyframes slideUp{0%{transform:translateY(30px);opacity:0}100%{transform:translateY(0);opacity:1}}
+@keyframes hpDrain{0%{transform:scaleX(1)}100%{transform:scaleX(0)}}
 
-  .top-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
-  .btn{height:40px;padding:0 15px;border-radius:10px;font-size:13.5px;font-weight:600;display:inline-flex;align-items:center;gap:7px;transition:.15s;border:1px solid transparent;white-space:nowrap}
-  .btn svg{width:16px;height:16px}
-  .btn.primary{background:var(--accent);color:#fff}
-  .btn.primary:hover{filter:brightness(1.05)}
-  .btn.primary:disabled{opacity:.5;cursor:default}
-  .btn.ghost{background:var(--surface);border-color:var(--line-strong);color:var(--ink)}
-  .btn.ghost:hover{border-color:var(--accent);color:var(--accent-ink)}
-  .btn.icon{width:40px;padding:0;justify-content:center}
+/* ===== 상단 HUD ===== */
+.hud{ display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+.trophy-box{ display:flex; align-items:center; gap:5px; background:linear-gradient(180deg,#FFD95C,#FF9E00);
+  padding:6px 12px; border-radius:14px; border:3px solid rgba(0,0,0,.4); box-shadow:0 4px 0 rgba(0,0,0,.4);
+  font-weight:900; color:#3A2000; font-size:15px; }
+.gem-box{ display:flex; align-items:center; gap:5px; background:linear-gradient(180deg,#5CE0FF,#0090D8);
+  padding:6px 12px; border-radius:14px; border:3px solid rgba(0,0,0,.4); box-shadow:0 4px 0 rgba(0,0,0,.4);
+  font-weight:900; color:#00293D; font-size:15px; }
+.rank-box{ margin-left:auto; background:linear-gradient(180deg,#C77DFF,#7B2CBF); padding:6px 12px;
+  border-radius:14px; border:3px solid rgba(0,0,0,.4); box-shadow:0 4px 0 rgba(0,0,0,.4);
+  font-weight:900; font-size:13px; }
 
-  .statusbar{max-width:1320px;margin:0 auto;padding:0 22px}
-  .status{display:flex;align-items:center;gap:9px;font-size:12.5px;padding:8px 12px;border-radius:9px;margin-top:10px}
-  .status svg{width:15px;height:15px;flex-shrink:0}
-  .status.ok{background:var(--ok-soft);color:#215c42}
-  .status.warn{background:var(--warn-soft);color:var(--warn)}
-  .status b{font-weight:700}
-  .status .mini{margin-left:auto;font-size:12px;text-decoration:underline;cursor:pointer;opacity:.85}
+/* ===== 타이틀 ===== */
+.title-wrap{ text-align:center; margin:6px 0 18px; }
+.title{ font-size:40px; font-weight:900; line-height:.95; letter-spacing:-1px;
+  background:linear-gradient(180deg,#FFE873 20%,#FF8A00 90%); -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent; filter:drop-shadow(0 3px 0 rgba(0,0,0,.55)); }
+.title-sub{ font-size:12px; color:var(--yellow); font-weight:800; letter-spacing:3px; margin-top:4px; }
 
-  main{flex:1;max-width:1320px;width:100%;margin:0 auto;padding:16px 22px 80px;display:grid;grid-template-columns:230px 1fr;gap:26px}
-  aside{position:sticky;top:88px;align-self:start;max-height:calc(100vh - 108px);overflow:auto}
-  .side-h{font-size:11.5px;font-weight:700;color:var(--hint);text-transform:uppercase;letter-spacing:.8px;padding:4px 10px 8px}
-  .folder{width:100%;display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:9px;font-size:14px;color:var(--ink);text-align:left;transition:.12s;margin-bottom:1px}
-  .folder:hover{background:var(--surface)}
-  .folder.active{background:var(--accent-soft);color:var(--accent-ink);font-weight:600}
-  .folder .ico{width:16px;height:16px;flex-shrink:0;color:var(--muted)}
-  .folder.active .ico{color:var(--accent)}
-  .folder .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .folder .ct{font-size:11.5px;color:var(--hint);background:var(--bg);padding:1px 8px;border-radius:999px}
-  .folder.active .ct{background:#fff}
+/* ===== 내 브롤러 카드 ===== */
+.mybrawler{ background:linear-gradient(180deg,var(--navy2),var(--navy)); border-radius:20px; padding:16px;
+  border:3px solid rgba(0,0,0,.45); box-shadow:0 6px 0 rgba(0,0,0,.45); margin-bottom:16px;
+  display:flex; align-items:center; gap:14px; }
+.avatar{ width:66px; height:66px; border-radius:18px; display:flex; align-items:center; justify-content:center;
+  font-size:38px; border:3px solid rgba(0,0,0,.45); box-shadow:inset 0 -4px 0 rgba(0,0,0,.25); animation:bob 2.6s ease-in-out infinite; }
+.mb-name{ font-size:19px; font-weight:900; }
+.mb-role{ font-size:11px; color:var(--yellow); font-weight:800; letter-spacing:1px; }
+.xpbar{ height:12px; background:#0E1128; border-radius:8px; overflow:hidden; margin-top:8px; border:2px solid rgba(0,0,0,.4); }
+.xpfill{ height:100%; background:linear-gradient(90deg,var(--green),var(--blue)); transition:width .6s; }
+.xptxt{ font-size:10px; color:var(--sub); margin-top:4px; font-weight:700; }
 
-  .content-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px;flex-wrap:wrap}
-  .content-head h2{font-size:21px;font-weight:700;letter-spacing:-.3px}
-  .content-head .meta{font-size:13px;color:var(--muted)}
-  .toolbar{display:flex;align-items:center;gap:10px;margin:14px 0 18px;flex-wrap:wrap}
-  .seg{display:flex;border:1px solid var(--line-strong);border-radius:9px;overflow:hidden;background:var(--surface)}
-  .seg button{padding:7px 12px;font-size:13px;color:var(--muted);font-weight:500}
-  .seg button.on{background:var(--accent-soft);color:var(--accent-ink);font-weight:600}
+/* ===== 이벤트(스테이지) 카드 ===== */
+.sec-title{ font-size:14px; font-weight:900; color:var(--yellow); letter-spacing:1px; margin:18px 0 10px;
+  display:flex; align-items:center; gap:6px; }
+.events{ display:flex; flex-direction:column; gap:12px; }
+.ev{ position:relative; border-radius:18px; padding:14px; display:flex; align-items:center; gap:13px;
+  border:3px solid rgba(0,0,0,.45); box-shadow:0 5px 0 rgba(0,0,0,.45); width:100%; text-align:left; color:#fff;
+  transition:transform .12s; }
+.ev:not(:disabled):hover{ transform:translateY(-2px); }
+.ev-ic{ width:52px; height:52px; border-radius:15px; background:rgba(0,0,0,.28); display:flex;
+  align-items:center; justify-content:center; font-size:28px; flex-shrink:0; border:2px solid rgba(255,255,255,.2); }
+.ev-tier{ font-size:10px; font-weight:900; letter-spacing:1.5px; opacity:.85; }
+.ev-name{ font-size:17px; font-weight:900; margin-top:1px; }
+.ev-meta{ font-size:11px; opacity:.8; font-weight:700; margin-top:3px; }
+.ev-tr{ margin-left:auto; text-align:right; }
+.ev-star{ font-size:15px; letter-spacing:-1px; }
+.lockbadge{ position:absolute; inset:0; background:rgba(8,10,25,.72); border-radius:15px;
+  display:flex; align-items:center; justify-content:center; font-size:26px; }
 
-  .grid{display:grid;gap:16px}
-  .grid.g-cozy{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
-  .grid.g-dense{grid-template-columns:repeat(auto-fill,minmax(148px,1fr))}
-  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;transition:.16s;position:relative}
-  .card:hover{box-shadow:var(--shadow);border-color:var(--line-strong);transform:translateY(-2px)}
-  .thumb{position:relative;aspect-ratio:4/3;background:var(--bg);overflow:hidden;cursor:pointer}
-  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
-  .thumb .ph{width:100%;height:100%;display:grid;place-items:center;color:var(--hint)}
-  .thumb .badge{position:absolute;top:8px;left:8px;background:rgba(43,42,38,.78);color:#fff;font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:999px;backdrop-filter:blur(4px);max-width:calc(100% - 16px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .card .body{padding:10px 11px}
-  .card .fname{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .card .finfo{font-size:11.5px;color:var(--hint);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .card .actions{display:flex;gap:6px;margin-top:9px}
-  .card .actions button{height:32px;border-radius:8px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:5px;transition:.12s}
-  .card .actions button svg{width:14px;height:14px}
-  .act-copy{flex:1;background:var(--accent);color:#fff}
-  .act-copy:hover{filter:brightness(1.06)}
-  .act-copy.done{background:var(--ok)}
-  .act-del{flex:0 0 auto;width:34px;background:var(--bg);color:var(--muted);border:1px solid var(--line)!important}
-  .act-del:hover{color:var(--danger);border-color:var(--danger)!important;background:var(--danger-soft)}
+/* ===== 배틀 화면 ===== */
+.btop{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.xbtn{ width:38px; height:38px; border-radius:12px; background:linear-gradient(180deg,#FF6B85,#D81E42);
+  border:3px solid rgba(0,0,0,.45); box-shadow:0 4px 0 rgba(0,0,0,.45); color:#fff; font-size:16px; font-weight:900; }
+.bprog{ flex:1; height:16px; background:#0E1128; border-radius:10px; overflow:hidden; border:3px solid rgba(0,0,0,.45); }
+.bprogf{ height:100%; transition:width .45s; background:linear-gradient(90deg,#FFE873,#FF8A00); }
+.lives{ font-size:17px; letter-spacing:-3px; }
 
-  .empty{grid-column:1/-1;text-align:center;padding:70px 20px;color:var(--muted)}
-  .empty svg{width:46px;height:46px;color:var(--line-strong);margin-bottom:12px}
-  .empty h3{font-size:16px;color:var(--ink);font-weight:600;margin-bottom:5px}
-  .empty p{font-size:13.5px;line-height:1.7}
+.vs-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
+.fighter{ text-align:center; flex:1; }
+.f-av{ width:54px; height:54px; margin:0 auto; border-radius:15px; display:flex; align-items:center;
+  justify-content:center; font-size:30px; border:3px solid rgba(0,0,0,.45); box-shadow:inset 0 -4px 0 rgba(0,0,0,.25); }
+.f-hp{ height:9px; background:#0E1128; border-radius:6px; margin-top:6px; overflow:hidden; border:2px solid rgba(0,0,0,.4); }
+.f-hpf{ height:100%; transition:width .5s; }
+.f-name{ font-size:10px; font-weight:900; margin-top:4px; opacity:.9; }
+.vs-txt{ font-size:20px; font-weight:900; color:var(--yellow); filter:drop-shadow(0 2px 0 rgba(0,0,0,.6)); }
 
-  mark{background:#fbe6c8;color:var(--accent-ink);border-radius:3px;padding:0 1px}
+.combo-tag{ text-align:center; font-weight:900; font-size:19px; color:var(--yellow);
+  filter:drop-shadow(0 2px 0 rgba(0,0,0,.6)); margin-bottom:8px; animation:pop .35s; }
+.mode-chip{ display:inline-block; font-size:11px; font-weight:900; letter-spacing:1px;
+  padding:5px 13px; border-radius:20px; border:2px solid rgba(0,0,0,.4); margin-bottom:14px; }
+.mission{ background:linear-gradient(180deg,var(--navy2),var(--navy)); border-radius:18px; padding:18px 16px;
+  border:3px solid rgba(0,0,0,.45); box-shadow:0 5px 0 rgba(0,0,0,.45); text-align:center; margin-bottom:16px; }
+.mission-lbl{ font-size:10px; font-weight:900; color:var(--yellow); letter-spacing:2px; margin-bottom:8px; }
+.mission-ko{ font-size:22px; font-weight:900; line-height:1.35; }
 
-  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 20px;border-radius:11px;font-size:13.5px;font-weight:500;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.25s;z-index:90;display:flex;align-items:center;gap:9px;max-width:90vw}
-  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-  .toast svg{width:17px;height:17px;color:#8fd6ad;flex-shrink:0}
+.hint{ text-align:center; font-size:12px; color:var(--sub); font-weight:700; margin-bottom:12px; }
+.slot{ min-height:62px; background:rgba(8,10,25,.55); border-radius:16px; padding:11px; display:flex;
+  flex-wrap:wrap; gap:7px; align-items:center; justify-content:center; margin-bottom:14px;
+  border:3px dashed rgba(255,255,255,.18); }
+.slot-ph{ color:rgba(255,255,255,.28); font-size:12px; font-weight:700; }
+.pool{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:18px; }
+.wchip{ background:linear-gradient(180deg,#3A4180,#252B54); color:#fff; padding:11px 15px; border-radius:13px;
+  font-size:16px; font-weight:900; border:3px solid rgba(0,0,0,.4); box-shadow:0 4px 0 rgba(0,0,0,.4); }
+.wchip.on{ background:linear-gradient(180deg,#FFD95C,#FF9E00); color:#3A2000; }
+.bigbtn{ width:100%; padding:16px; border-radius:18px; font-size:18px; font-weight:900; color:#3A2000;
+  border:3px solid rgba(0,0,0,.45); box-shadow:0 6px 0 rgba(0,0,0,.45);
+  background:linear-gradient(180deg,#FFD95C,#FF9E00); }
+.bigbtn.blue{ background:linear-gradient(180deg,#5CE0FF,#0090D8); color:#00293D; }
+.bigbtn.red{ background:linear-gradient(180deg,#FF6B85,#D81E42); color:#fff; animation:glow 1s infinite; }
+.bigbtn.ghost{ background:linear-gradient(180deg,#3A4180,#252B54); color:#fff; margin-top:10px; box-shadow:0 5px 0 rgba(0,0,0,.45); }
 
-  .overlay{position:fixed;inset:0;background:rgba(40,38,32,.5);backdrop-filter:blur(3px);display:none;place-items:center;z-index:80;padding:20px}
-  .overlay.show{display:grid}
-  .modal{background:var(--surface);border-radius:18px;width:100%;max-width:540px;box-shadow:0 20px 60px rgba(40,38,32,.25);max-height:92vh;overflow:auto}
-  .modal-h{padding:20px 24px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
-  .modal-h h3{font-size:17px;font-weight:700}
-  .modal-h .x{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--muted)}
-  .modal-h .x:hover{background:var(--bg)}
-  .modal-b{padding:20px 24px}
-  .field{margin-bottom:15px}
-  .field label{display:block;font-size:12.5px;font-weight:600;margin-bottom:6px}
-  .field input,.field textarea{width:100%;padding:10px 12px;border:1px solid var(--line-strong);border-radius:9px;background:var(--surface);outline:none;font-size:14px;transition:.15s}
-  .field textarea{resize:vertical;min-height:60px;line-height:1.5;font-size:12.5px;color:var(--muted)}
-  .field input:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-  .field .desc{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.5}
-  .modal-f{padding:14px 24px 20px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--line)}
-  .note{background:var(--accent-soft);border-radius:10px;padding:12px 14px;font-size:12.5px;color:var(--accent-ink);line-height:1.6;margin-bottom:16px}
-  .note.warn{background:var(--warn-soft);color:var(--warn)}
+.saycard{ background:linear-gradient(180deg,#2E3568,#1B1F3B); border-radius:20px; padding:22px; text-align:center;
+  border:3px solid rgba(0,0,0,.45); box-shadow:0 6px 0 rgba(0,0,0,.45); margin-bottom:14px; animation:bob 3s ease-in-out infinite; }
+.say-en{ font-size:22px; font-weight:900; margin-bottom:12px; line-height:1.3; }
+.playbtn{ background:rgba(0,0,0,.35); color:#fff; padding:8px 18px; border-radius:20px; font-size:13px;
+  font-weight:800; border:2px solid rgba(255,255,255,.2); }
+.warn{ font-size:10px; color:var(--sub); text-align:center; margin-top:10px; font-weight:700; }
+.fb{ margin-top:14px; padding:13px; border-radius:14px; font-size:13px; font-weight:900; text-align:center;
+  border:3px solid rgba(0,0,0,.4); animation:shake .4s; }
 
-  .dropzone{border:2px dashed var(--line-strong);border-radius:12px;background:var(--bg);padding:22px;text-align:center;color:var(--muted);transition:.18s;cursor:pointer;margin-bottom:15px}
-  .dropzone.drag{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink)}
-  .dropzone svg{width:28px;height:28px;margin-bottom:6px;color:var(--hint)}
-  .dropzone.drag svg{color:var(--accent)}
-  .dropzone strong{display:block;font-size:14px;color:var(--ink);font-weight:600;margin-bottom:2px}
-  .dropzone .small{font-size:12px}
-  .preview-row{display:flex;align-items:center;gap:12px;margin-bottom:15px;padding:12px;background:var(--bg);border-radius:10px}
-  .preview-row img{width:60px;height:60px;border-radius:8px;object-fit:cover;flex-shrink:0;background:var(--surface)}
-  .preview-row .pmeta{flex:1;min-width:0;font-size:12.5px;color:var(--muted)}
-  .preview-row .pmeta b{color:var(--ink);display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ===== 보상 오버레이 ===== */
+.ovl{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  z-index:60; pointer-events:none; }
+.ovl-bg{ position:absolute; inset:0; background:radial-gradient(circle at 50% 45%, rgba(255,201,60,.22), rgba(8,10,25,.86) 70%); }
+.rcard{ position:relative; text-align:center; animation:pop .5s cubic-bezier(.2,1.4,.4,1) both; }
+.rring{ position:absolute; top:44px; left:50%; width:130px; height:130px; margin-left:-65px;
+  border:5px solid var(--yellow); border-radius:50%; animation:ring .75s ease-out both; }
+.rface{ font-size:74px; filter:drop-shadow(0 6px 0 rgba(0,0,0,.5)); }
+.rmsg{ font-size:26px; font-weight:900; margin-top:2px; filter:drop-shadow(0 3px 0 rgba(0,0,0,.6)); }
+.rrewards{ display:flex; gap:10px; justify-content:center; margin-top:16px; }
+.rpill{ display:flex; align-items:center; gap:6px; padding:9px 16px; border-radius:26px; font-weight:900;
+  font-size:18px; border:3px solid rgba(0,0,0,.45); box-shadow:0 4px 0 rgba(0,0,0,.45); animation:slideUp .45s .12s both; }
+.rp-tr{ background:linear-gradient(180deg,#FFD95C,#FF9E00); color:#3A2000; }
+.rp-gem{ background:linear-gradient(180deg,#5CE0FF,#0090D8); color:#00293D; }
+.coin{ position:absolute; font-size:28px; animation:coinUp 1s ease-out both; }
+.cf{ position:absolute; top:0; width:10px; height:16px; border-radius:2px; animation:conf 1.3s linear both; }
 
-  .loadbar{position:fixed;top:0;left:0;height:3px;background:var(--accent);width:0;z-index:95;transition:width .2s;opacity:0}
-  .loadbar.on{opacity:1}
-
-  .welcome{grid-column:1/-1;display:grid;place-items:center;padding:30px 20px}
-  .welcome-card{max-width:660px;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:38px;text-align:center;box-shadow:var(--shadow)}
-  .welcome-card .big{width:60px;height:60px;border-radius:16px;background:var(--accent-soft);display:grid;place-items:center;margin:0 auto 18px}
-  .welcome-card .big svg{width:30px;height:30px;color:var(--accent)}
-  .welcome-card h2{font-size:21px;font-weight:700;margin-bottom:10px}
-  .welcome-card p{font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:6px}
-  .welcome-card .steps{text-align:left;background:var(--bg);border-radius:12px;padding:16px 18px;margin:20px 0;font-size:13px;line-height:1.85}
-  .welcome-card .steps b{color:var(--accent-ink)}
-  .welcome-card code{background:var(--surface);padding:1px 6px;border-radius:5px;font-size:12px}
-  .welcome-card .cta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:6px}
-  .welcome-card .btn{height:46px;padding:0 22px;font-size:14.5px}
-  .welcome-note{font-size:12px;color:var(--hint);margin-top:15px;line-height:1.6}
-
-  .lb{position:fixed;inset:0;background:rgba(20,19,16,.92);display:none;z-index:85;flex-direction:column}
-  .lb.show{display:flex}
-  .lb-top{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;color:#fff;gap:12px}
-  .lb-top .ttl{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-  .lb-top .ttl small{display:block;font-weight:400;color:#bdbab0;font-size:11.5px;margin-top:2px;overflow:hidden;text-overflow:ellipsis}
-  .lb-top .tools{display:flex;gap:9px;flex-shrink:0}
-  .lb-top button{height:38px;padding:0 14px;border-radius:9px;background:rgba(255,255,255,.12);color:#fff;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:7px}
-  .lb-top button:hover{background:rgba(255,255,255,.22)}
-  .lb-top button svg{width:15px;height:15px}
-  .lb-body{flex:1;display:grid;place-items:center;padding:0 22px 22px;overflow:hidden}
-  .lb-body img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px}
-
-  .menu{position:relative}
-  .menu-pop{position:absolute;right:0;top:46px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:6px;min-width:210px;display:none;z-index:40}
-  .menu-pop.show{display:block}
-  .menu-pop button{width:100%;text-align:left;padding:9px 11px;border-radius:8px;font-size:13.5px;display:flex;align-items:center;gap:9px;color:var(--ink)}
-  .menu-pop button:hover{background:var(--bg)}
-  .menu-pop button svg{width:15px;height:15px;color:var(--muted);flex-shrink:0}
-  .menu-pop .sep{height:1px;background:var(--line);margin:5px 2px}
-
-  @media(max-width:840px){
-    main{grid-template-columns:1fr}
-    aside{position:static;max-height:none;display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
-    .side-h{display:none}.folder{flex:0 0 auto;margin:0}
-  }
+/* ===== 결과 ===== */
+.res{ text-align:center; padding-top:36px; }
+.res-banner{ font-size:34px; font-weight:900; letter-spacing:-1px; margin:8px 0 4px;
+  background:linear-gradient(180deg,#FFE873,#FF8A00); -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 3px 0 rgba(0,0,0,.55)); }
+.res-stars{ font-size:34px; letter-spacing:2px; margin:10px 0 22px; }
+.res-grid{ display:flex; gap:10px; justify-content:center; margin-bottom:24px; }
+.res-box{ background:linear-gradient(180deg,var(--navy2),var(--navy)); border-radius:16px; padding:14px 16px;
+  min-width:92px; border:3px solid rgba(0,0,0,.45); box-shadow:0 5px 0 rgba(0,0,0,.45); }
+.res-n{ font-size:23px; font-weight:900; color:var(--yellow); }
+.res-l{ font-size:10px; color:var(--sub); font-weight:800; margin-top:3px; letter-spacing:1px; }
+.newbrawler{ background:linear-gradient(180deg,#C77DFF,#7B2CBF); border-radius:18px; padding:14px;
+  border:3px solid rgba(0,0,0,.45); box-shadow:0 5px 0 rgba(0,0,0,.45); margin-bottom:18px; animation:pop .5s; }
+.nb-t{ font-size:11px; font-weight:900; letter-spacing:2px; opacity:.9; }
+.nb-n{ font-size:20px; font-weight:900; margin-top:4px; }
 </style>
 </head>
 <body>
-<div class="loadbar" id="loadbar"></div>
-<div class="app">
-  <header class="topbar">
-    <div class="topbar-inner">
-      <div class="brand">
-        <div class="logo">A</div>
-        <div>
-          <h1>아르떼조명 CS상담용 이미지</h1>
-          <div class="sub">OneDrive 폴더 저장형 상담 이미지 아카이브</div>
-        </div>
-      </div>
-      <div class="search-wrap">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
-        <input id="search" type="text" placeholder="파일 이름·폴더·경로로 검색…" autocomplete="off"/>
-        <button class="search-clear" id="searchClear" aria-label="지우기"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
-      </div>
-      <div class="top-actions">
-        <button class="btn primary" id="addBtn" disabled>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>이미지 등록
-        </button>
-        <div class="menu">
-          <button class="btn ghost icon" id="menuBtn" aria-label="메뉴" title="더보기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/></svg></button>
-          <div class="menu-pop" id="menuPop">
-            <button id="changeFolderBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2z"/></svg>저장 폴더 변경</button>
-            <button id="reloadBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>새로고침</button>
-            <div class="sep"></div>
-            <button id="exportLightBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>목록 내보내기 (가볍게)</button>
-            <button id="exportFullBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>목록 내보내기 (원본 포함)</button>
-            <button id="importBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>목록 불러오기</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="statusbar"><div id="statusRow"></div></div>
-  </header>
-
-  <main>
-    <aside id="folders" style="display:none"></aside>
-    <section><div id="viewArea"></div></section>
-  </main>
-</div>
-
-<div class="overlay" id="addOverlay">
-  <div class="modal">
-    <div class="modal-h"><h3>이미지 등록</h3><button class="x" data-close="addOverlay"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
-    <div class="modal-b">
-      <div class="note">선택한 이미지가 <b>저장 폴더에 실제 파일로 저장</b>됩니다. OneDrive가 자동 동기화해 구성원이 공유합니다. 붙여넣은 경로는 출처로 함께 기록됩니다.</div>
-      <div class="dropzone" id="dropzone">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
-        <strong>이미지 파일 선택 또는 끌어다 놓기</strong>
-        <span class="small">png · jpg · gif 등 · 여러 장 가능</span>
-        <input type="file" id="fileInput" accept="image/*" multiple hidden/>
-      </div>
-      <div id="addFields" style="display:none">
-        <div class="field">
-          <label>폴더(분류)</label>
-          <input id="fFolder" type="text" placeholder="예: 거실등 / 무몰딩도배 (비우면 미분류)"/>
-          <div class="desc">저장 폴더 안에 이 이름의 하위 폴더로 저장됩니다.</div>
-        </div>
-        <div class="field">
-          <label>원본 경로 (출처 기록용, 선택)</label>
-          <textarea id="fPath" placeholder="C:\Users\user\OneDrive\...\디아망벽지샘플28-1.png"></textarea>
-        </div>
-        <div id="previewArea"></div>
-      </div>
-    </div>
-    <div class="modal-f">
-      <button class="btn ghost" data-close="addOverlay">취소</button>
-      <button class="btn primary" id="saveAdd" disabled>등록</button>
-    </div>
-  </div>
-</div>
-
-<input type="file" id="importInput" accept="application/json,.json" hidden/>
-
-<div class="lb" id="lightbox">
-  <div class="lb-top">
-    <div class="ttl" id="lbTitle">—<small id="lbSub"></small></div>
-    <div class="tools">
-      <button id="lbCopy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>이미지 복사</button>
-      <button id="lbPath"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>경로 복사</button>
-      <button id="lbClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>닫기</button>
-    </div>
-  </div>
-  <div class="lb-body"><img id="lbImg" src="" alt=""/></div>
-</div>
-
-<div class="toast" id="toast"></div>
-
+<div id="app"></div>
 <script>
-const $=(s,r=document)=>r.querySelector(s);
-const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+/* ================================================================
+   SPEAK BRAWL — 브롤스타즈 스타일 영어 스피킹 배틀
+   문법 단계 = 배틀 이벤트 / 문장 완성 = 적 처치 / 보상 = 트로피·젬
+   ================================================================ */
 
-const HAS_FSA='showDirectoryPicker' in window;
-const SECURE=window.isSecureContext;
-const LIB_FILE='_library.json';
+/* ---------- 브롤러(캐릭터) : 스테이지 클리어 시 해금 ---------- */
+const BRAWLERS = [
+  { id:"b1", name:"쉘리",   emoji:"🦊", color:"#FF8A00", tag:"스타터" },
+  { id:"b2", name:"콜트",   emoji:"🤠", color:"#00C2FF", tag:"명사수" },
+  { id:"b3", name:"불",     emoji:"🐻", color:"#FF3B5C", tag:"탱커" },
+  { id:"b4", name:"제시",   emoji:"⚡", color:"#FFC93C", tag:"서포터" },
+  { id:"b5", name:"레온",   emoji:"🦎", color:"#3DDC5C", tag:"암살자" },
+  { id:"b6", name:"스파이크",emoji:"🌵", color:"#FF5FA2", tag:"전설" },
+  { id:"b7", name:"크로우", emoji:"🦅", color:"#A64DFF", tag:"전설" },
+  { id:"b8", name:"엠즈",   emoji:"👑", color:"#FFD95C", tag:"신화" },
+];
 
-/* ===== IndexedDB: 폴더 핸들 저장 ===== */
-function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('arteFolderDB',1);r.onupgradeneeded=()=>r.result.createObjectStore('h');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
-async function idbSet(k,v){const db=await idb();return new Promise((res,rej)=>{const tx=db.transaction('h','readwrite');tx.objectStore('h').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}
-async function idbGet(k){const db=await idb();return new Promise((res,rej)=>{const rq=db.transaction('h','readonly').objectStore('h').get(k);rq.onsuccess=()=>res(rq.result);rq.onerror=()=>rej(rq.error)})}
+/* ---------- 배틀 이벤트 = 문법 커리큘럼 (초등~고등) ----------
+   sentences 배열을 채워 3800문장까지 확장. { en, ko, chunks } */
+const EVENTS = [
+  { id:"g1", tier:"초등", mode:"젬 그랩", grammar:"be동사 · 현재", icon:"💎", color:"#00C2FF", boss:"👾", bossName:"비봇",
+    sentences:[
+      {en:"I am a student.",ko:"나는 학생이다.",chunks:["I","am","a","student"]},
+      {en:"She is my friend.",ko:"그녀는 내 친구다.",chunks:["She","is","my","friend"]},
+      {en:"They are happy.",ko:"그들은 행복하다.",chunks:["They","are","happy"]},
+      {en:"It is a big dog.",ko:"그것은 큰 개다.",chunks:["It","is","a","big","dog"]},
+      {en:"We are ready.",ko:"우리는 준비됐다.",chunks:["We","are","ready"]},
+    ]},
+  { id:"g2", tier:"초등", mode:"브롤볼", grammar:"일반동사 · 현재", icon:"⚽", color:"#3DDC5C", boss:"🤖", bossName:"봇킹",
+    sentences:[
+      {en:"I like pizza.",ko:"나는 피자를 좋아한다.",chunks:["I","like","pizza"]},
+      {en:"He plays soccer.",ko:"그는 축구를 한다.",chunks:["He","plays","soccer"]},
+      {en:"We go to school.",ko:"우리는 학교에 간다.",chunks:["We","go","to","school"]},
+      {en:"She reads books.",ko:"그녀는 책을 읽는다.",chunks:["She","reads","books"]},
+      {en:"Birds fly high.",ko:"새들은 높이 난다.",chunks:["Birds","fly","high"]},
+    ]},
+  { id:"g3", tier:"중등", mode:"하이스트", grammar:"현재진행형", icon:"💰", color:"#FFC93C", boss:"👹", bossName:"러너",
+    sentences:[
+      {en:"I am eating lunch.",ko:"나는 점심을 먹고 있다.",chunks:["I","am","eating","lunch"]},
+      {en:"She is running fast.",ko:"그녀는 빠르게 달리고 있다.",chunks:["She","is","running","fast"]},
+      {en:"They are watching a movie.",ko:"그들은 영화를 보고 있다.",chunks:["They","are","watching","a","movie"]},
+      {en:"We are learning English.",ko:"우리는 영어를 배우고 있다.",chunks:["We","are","learning","English"]},
+    ]},
+  { id:"g4", tier:"중등", mode:"바운티", grammar:"과거시제", icon:"⭐", color:"#FF5FA2", boss:"🐙", bossName:"타코",
+    sentences:[
+      {en:"I visited my grandmother.",ko:"나는 할머니를 찾아뵀다.",chunks:["I","visited","my","grandmother"]},
+      {en:"He bought a new phone.",ko:"그는 새 휴대폰을 샀다.",chunks:["He","bought","a","new","phone"]},
+      {en:"We went to the beach.",ko:"우리는 해변에 갔다.",chunks:["We","went","to","the","beach"]},
+      {en:"She finished her homework.",ko:"그녀는 숙제를 끝냈다.",chunks:["She","finished","her","homework"]},
+    ]},
+  { id:"g5", tier:"중등", mode:"녹아웃", grammar:"미래 · will / be going to", icon:"💥", color:"#A64DFF", boss:"🦖", bossName:"렉스",
+    sentences:[
+      {en:"I will call you tomorrow.",ko:"내일 너에게 전화할게.",chunks:["I","will","call","you","tomorrow"]},
+      {en:"She is going to travel.",ko:"그녀는 여행을 갈 것이다.",chunks:["She","is","going","to","travel"]},
+      {en:"We will win the game.",ko:"우리는 그 경기를 이길 것이다.",chunks:["We","will","win","the","game"]},
+    ]},
+  { id:"g6", tier:"고등", mode:"쇼다운", grammar:"현재완료", icon:"🏝️", color:"#FF8A00", boss:"🐲", bossName:"드레이크",
+    sentences:[
+      {en:"I have finished my project.",ko:"나는 프로젝트를 끝냈다.",chunks:["I","have","finished","my","project"]},
+      {en:"She has lived here for years.",ko:"그녀는 여기서 수년간 살았다.",chunks:["She","has","lived","here","for","years"]},
+      {en:"They have never seen snow.",ko:"그들은 눈을 본 적이 없다.",chunks:["They","have","never","seen","snow"]},
+    ]},
+  { id:"g7", tier:"고등", mode:"핫존", grammar:"관계대명사", icon:"🔥", color:"#FF3B5C", boss:"👺", bossName:"모르티스",
+    sentences:[
+      {en:"This is the book that I love.",ko:"이것은 내가 사랑하는 책이다.",chunks:["This","is","the","book","that","I","love"]},
+      {en:"The man who called was kind.",ko:"전화한 남자는 친절했다.",chunks:["The","man","who","called","was","kind"]},
+      {en:"I know a place where we can rest.",ko:"우리가 쉴 수 있는 곳을 안다.",chunks:["I","know","a","place","where","we","can","rest"]},
+    ]},
+  { id:"g8", tier:"고등", mode:"보스 배틀", grammar:"가정법", icon:"👑", color:"#FFD95C", boss:"😈", bossName:"다크 로드",
+    sentences:[
+      {en:"If I were rich, I would help.",ko:"내가 부자라면 도울 텐데.",chunks:["If","I","were","rich","I","would","help"]},
+      {en:"I wish I could fly.",ko:"날 수 있으면 좋겠다.",chunks:["I","wish","I","could","fly"]},
+    ]},
+];
+const TOTAL_TARGET = 3800;
 
-/* ===== 상태 ===== */
-let dirHandle=null;
-let items=[];          // {id,name,folder,path,file,thumb,ts}
-let activeFolder='__all__';
-let searchTerm='', density='cozy';
-let mode = (HAS_FSA && SECURE) ? 'fsa' : 'file'; // fsa: 폴더직접저장 / file: 파일내보내기 폴백
-const IMG_RE=/\.(jpe?g|jpe|jfif|png|gif|webp|bmp|dib|avif|svg|heic|heif|tiff?|ico)$/i;
-function isImage(f){const n=(f.name||'').trim();return IMG_RE.test(n)||(f.type&&f.type.toLowerCase().startsWith('image/'))}
+/* ---------- 랭크 ---------- */
+const RANKS=[[0,"브론즈 I"],[60,"브론즈 III"],[150,"실버 II"],[280,"골드 I"],[450,"다이아 II"],[700,"신화"],[1000,"레전드"],[1500,"마스터"]];
+const rankOf=t=>{ let r=RANKS[0][1]; RANKS.forEach(([n,l])=>{ if(t>=n) r=l; }); return r; };
 
-let toastTimer;
-function toast(msg,ok=true){const t=$('#toast');t.innerHTML=(ok?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>':'')+`<span>${msg}</span>`;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2800)}
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function uid(){return 'i_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7)}
-function lb(on,w){const b=$('#loadbar');if(on){b.classList.add('on');b.style.width=(w||10)+'%'}else{b.style.width='100%';setTimeout(()=>{b.classList.remove('on');b.style.width='0'},260)}}
-
-/* ===== 썸네일 ===== */
-function makeThumb(file,maxSide=480,q=0.8){return new Promise(res=>{const url=URL.createObjectURL(file);const img=new Image();img.onload=()=>{let w=img.naturalWidth,h=img.naturalHeight;const s=Math.min(1,maxSide/Math.max(w,h));const cw=Math.max(1,Math.round(w*s)),ch=Math.max(1,Math.round(h*s));const c=document.createElement('canvas');c.width=cw;c.height=ch;c.getContext('2d').drawImage(img,0,0,cw,ch);URL.revokeObjectURL(url);let d='';try{d=c.toDataURL('image/jpeg',q)}catch(e){}res(d)};img.onerror=()=>{URL.revokeObjectURL(url);res('')};img.src=url})}
-
-/* ===== 폴더 연결 (FSA 모드) ===== */
-async function pickFolder(){
+/* ---------- 유틸 ---------- */
+const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
+const norm=s=>s.toLowerCase().replace(/[.,!?]/g,"").trim();
+const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const srOK=!!SR;
+function say(t){try{const u=new SpeechSynthesisUtterance(t);u.lang="en-US";u.rate=.9;speechSynthesis.speak(u);}catch(e){}}
+/* 간단 효과음 (WebAudio) */
+function sfx(type){
   try{
-    const h=await window.showDirectoryPicker({id:'arte-cs-archive',mode:'readwrite'});
-    dirHandle=h;
-    await idbSet('dir',h);
-    await ensurePermission(h,true);
-    await loadLibrary();
-    toast('저장 폴더를 연결했어요');
-  }catch(e){ if(e&&e.name==='AbortError')return; toast('폴더 연결 실패: '+(e.message||e),false); }
-}
-async function ensurePermission(h,ask){
-  if(!h.queryPermission)return true;
-  let p=await h.queryPermission({mode:'readwrite'});
-  if(p==='granted')return true;
-  if(ask){p=await h.requestPermission({mode:'readwrite'})}
-  return p==='granted';
-}
-async function reopenSaved(userGesture){
-  const h=await idbGet('dir').catch(()=>null);
-  if(!h)return false;
-  dirHandle=h;
-  const ok=await ensurePermission(h,userGesture);
-  if(!ok){renderNeedPermission();return false;}
-  await loadLibrary();
-  return true;
+    const C=window.AudioContext||window.webkitAudioContext; if(!C)return;
+    const ctx=sfx.ctx||(sfx.ctx=new C());
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    const map={hit:[880,.08],win:[1320,.18],bad:[180,.22],tap:[520,.05]};
+    const [f,d]=map[type]||map.tap;
+    o.type= type==="bad"?"sawtooth":"square"; o.frequency.value=f;
+    g.gain.setValueAtTime(.09,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+d);
+    o.start(); o.stop(ctx.currentTime+d);
+  }catch(e){}
 }
 
-/* 저장 폴더에서 _library.json + 실제 파일 로드 */
-async function loadLibrary(){
-  if(!dirHandle)return;
-  lb(true,20);
-  items=[];
-  let meta=[];
-  try{
-    const fh=await dirHandle.getFileHandle(LIB_FILE);
-    const f=await fh.getFile();
-    const j=JSON.parse(await f.text());
-    meta=(j&&j.items)||[];
-  }catch(e){ meta=[]; } // 최초엔 없음
-  // 각 항목의 실제 파일을 읽어 File 확보 (썸네일은 메타에 저장돼 즉시 표시)
-  for(const m of meta){
-    items.push({id:m.id,name:m.name,folder:m.folder||'미분류',path:m.path||'',thumb:m.thumb||'',rel:m.rel||'',ts:m.ts||Date.now(),file:null});
+/* ---------- 플레이어 상태 ---------- */
+const P={ trophies:0, gems:0, xp:0, cleared:{}, brawler:0, unlocked:[0] };
+const app=document.getElementById("app");
+
+/* ================= 홈 (메인 로비) ================= */
+function home(){
+  app.innerHTML="";
+  const me=BRAWLERS[P.brawler];
+
+  const hud=el("div","hud");
+  hud.appendChild(el("div","trophy-box",`🏆 ${P.trophies}`));
+  hud.appendChild(el("div","gem-box",`💎 ${P.gems}`));
+  hud.appendChild(el("div","rank-box",rankOf(P.trophies)));
+  app.appendChild(hud);
+
+  const tw=el("div","title-wrap");
+  tw.appendChild(el("div","title","SPEAK<br>BRAWL"));
+  tw.appendChild(el("div","title-sub","ENGLISH BATTLE ARENA"));
+  app.appendChild(tw);
+
+  // 내 브롤러
+  const mb=el("div","mybrawler");
+  const av=el("div","avatar",me.emoji);
+  av.style.background=`linear-gradient(180deg,${me.color},${me.color}99)`;
+  mb.appendChild(av);
+  const info=el("div"); info.style.flex="1";
+  info.appendChild(el("div","mb-role",me.tag.toUpperCase()));
+  info.appendChild(el("div","mb-name",me.name));
+  const xb=el("div","xpbar"); const xf=el("div","xpfill");
+  xf.style.width=Math.min(100,(P.xp/TOTAL_TARGET)*100*8)+"%"; xb.appendChild(xf);
+  info.appendChild(xb);
+  info.appendChild(el("div","xptxt",`문장 파워 ${P.xp} / ${TOTAL_TARGET}`));
+  mb.appendChild(info);
+  app.appendChild(mb);
+
+  // 브롤러 선택(해금된 것만)
+  if(P.unlocked.length>1){
+    app.appendChild(el("div","sec-title","🎭 내 브롤러"));
+    const row=el("div"); row.style.cssText="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px";
+    P.unlocked.forEach(bi=>{
+      const b=BRAWLERS[bi];
+      const btn=el("button",null,b.emoji);
+      btn.style.cssText=`width:52px;height:52px;border-radius:15px;font-size:26px;border:3px solid ${bi===P.brawler?"#FFC93C":"rgba(0,0,0,.45)"};box-shadow:0 4px 0 rgba(0,0,0,.45);background:linear-gradient(180deg,${b.color},${b.color}99)`;
+      btn.onclick=()=>{ sfx("tap"); P.brawler=bi; home(); };
+      row.appendChild(btn);
+    });
+    app.appendChild(row);
   }
-  lb(false);
-  activeFolder='__all__';
-  updateStatus();render();
-  toast(`${items.length}장 불러왔어요`);
-}
 
-/* _library.json 저장 */
-async function saveLibrary(){
-  if(mode!=='fsa'||!dirHandle)return;
-  const data={format:'arte-cs-archive',version:1,updatedAt:new Date().toISOString(),
-    items:items.map(m=>({id:m.id,name:m.name,folder:m.folder,path:m.path||'',thumb:m.thumb||'',rel:m.rel||'',ts:m.ts}))};
-  const fh=await dirHandle.getFileHandle(LIB_FILE,{create:true});
-  const w=await fh.createWritable();
-  await w.write(new Blob([JSON.stringify(data)],{type:'application/json'}));
-  await w.close();
-}
-
-/* 폴더 핸들 얻기(하위폴더 생성) */
-async function getFolderHandle(folder){
-  if(!folder||folder==='미분류')return dirHandle;
-  return await dirHandle.getDirectoryHandle(folder,{create:true});
-}
-/* 실제 파일 저장 */
-async function writeImageFile(folder,filename,file){
-  const fh=await getFolderHandle(folder);
-  let name=filename, base=filename.replace(/(\.[^.]+)$/,''), ext=(filename.match(/\.[^.]+$/)||[''])[0], n=1;
-  // 중복 이름 회피
-  while(true){
-    try{ await fh.getFileHandle(name); name=base+'('+(n++)+')'+ext; }
-    catch(_){ break; }
-  }
-  const wh=await fh.getFileHandle(name,{create:true});
-  const w=await wh.createWritable();
-  await w.write(file);
-  await w.close();
-  return (folder&&folder!=='미분류'?folder+'/':'')+name;
-}
-/* 실제 파일 읽기(복사/확대용) */
-async function readImageFile(it){
-  if(it.file)return it.file;
-  if(mode!=='fsa'||!dirHandle||!it.rel)return null;
-  try{
-    const parts=it.rel.split('/');
-    let dir=dirHandle;
-    for(let i=0;i<parts.length-1;i++)dir=await dir.getDirectoryHandle(parts[i]);
-    const fh=await dir.getFileHandle(parts[parts.length-1]);
-    const f=await fh.getFile();
-    it.file=f;return f;
-  }catch(e){return null}
-}
-
-/* ===== 등록 ===== */
-let pending=[];
-$('#addBtn').onclick=()=>{ if(!dirHandle && mode==='fsa'){toast('먼저 저장 폴더를 연결하세요',false);pickFolder();return;} openAdd(); };
-function openAdd(){pending=[];$('#fFolder').value=activeFolder==='__all__'?'':activeFolder;$('#fPath').value='';$('#addFields').style.display='none';$('#previewArea').innerHTML='';$('#saveAdd').disabled=true;$('#addOverlay').classList.add('show')}
-const dz=$('#dropzone');
-dz.onclick=()=>$('#fileInput').click();
-$('#fileInput').onchange=e=>{stage([...e.target.files]);e.target.value=''};
-['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag')}));
-['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag')}));
-dz.addEventListener('drop',e=>{const fs=[...(e.dataTransfer.files||[])].filter(isImage);if(fs.length)stage(fs)});
-
-async function stage(files){
-  const imgs=files.filter(isImage);
-  if(!imgs.length){toast('이미지 파일이 아니에요',false);return;}
-  lb(true,20);pending=[];
-  for(let i=0;i<imgs.length;i++){const f=imgs[i];const thumb=await makeThumb(f);pending.push({file:f,thumb});$('#loadbar').style.width=(20+70*(i+1)/imgs.length)+'%';}
-  lb(false);
-  $('#addFields').style.display='';$('#saveAdd').disabled=false;
-  if(pending.length===1){const p=pending[0];$('#previewArea').innerHTML=`<div class="preview-row"><img src="${p.thumb||''}"/><div class="pmeta"><b>${esc(p.file.name)}</b>${(p.file.size/1024).toFixed(0)}KB</div></div>`}
-  else $('#previewArea').innerHTML=`<div class="note" style="margin-bottom:0">${pending.length}장 준비됨 · 같은 폴더로 저장됩니다 (경로는 생략)</div>`;
-}
-
-$('#saveAdd').onclick=async()=>{
-  if(!pending.length)return;
-  const folder=($('#fFolder').value.trim())||'미분류';
-  const path=$('#fPath').value.trim();
-  $('#saveAdd').disabled=true;lb(true,15);
-  let ok=0;
-  for(let i=0;i<pending.length;i++){
-    const {file,thumb}=pending[i];
-    const it={id:uid(),name:file.name,folder,path:(pending.length===1?path:''),thumb:thumb||'',rel:'',ts:Date.now(),file};
-    try{
-      if(mode==='fsa'&&dirHandle){ it.rel=await writeImageFile(folder,file.name,file); }
-      items.unshift(it);ok++;
-    }catch(e){ toast('저장 실패: '+(e.message||e),false); }
-    $('#loadbar').style.width=(15+80*(i+1)/pending.length)+'%';
-  }
-  try{ await saveLibrary(); }catch(e){ toast('목록 저장 실패: '+(e.message||e),false); }
-  lb(false);
-  $('#addOverlay').classList.remove('show');
-  if(folder!=='미분류')activeFolder=folder;
-  render();updateStatus();
-  toast(`${ok}장 저장 완료 · OneDrive가 자동 동기화합니다`);
-};
-
-/* ===== 폴더/목록 ===== */
-function folderCounts(){const m={};items.forEach(p=>m[p.folder]=(m[p.folder]||0)+1);return m}
-function folderNames(){return Object.keys(folderCounts())}
-function renderFolders(){
-  const counts=folderCounts();const names=folderNames().sort((a,b)=>a.localeCompare(b,'ko'));
-  const el=$('#folders');el.style.display='';
-  let html=`<div class="side-h">폴더 (${names.length})</div>`;
-  html+=fBtn('__all__','전체 보기',items.length,'all');
-  names.forEach(n=>html+=fBtn(n,n,counts[n]));
-  el.innerHTML=html;
-  $$('.folder',el).forEach(b=>b.onclick=()=>{activeFolder=b.dataset.f;render()});
-}
-function fBtn(id,name,count,type){
-  const ico=type==='all'?'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>':'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2z"/></svg>';
-  return `<button class="folder ${activeFolder===id?'active':''}" data-f="${esc(id)}">${ico}<span class="nm">${esc(name)}</span><span class="ct">${count}</span></button>`;
-}
-function currentList(){
-  let list=activeFolder==='__all__'?items:items.filter(p=>p.folder===activeFolder);
-  if(searchTerm){const q=searchTerm.toLowerCase();list=list.filter(p=>(p.name||'').toLowerCase().includes(q)||(p.folder||'').toLowerCase().includes(q)||(p.path||'').toLowerCase().includes(q))}
-  return list.slice().sort((a,b)=>b.ts-a.ts);
-}
-function highlight(t,q){t=t||'';if(!q)return esc(t);const i=t.toLowerCase().indexOf(q.toLowerCase());if(i<0)return esc(t);return esc(t.slice(0,i))+'<mark>'+esc(t.slice(i,i+q.length))+'</mark>'+esc(t.slice(i+q.length))}
-
-function render(){
-  if(!dirHandle && mode==='fsa' && !items.length){renderWelcome();return;}
-  if(!items.length){renderEmpty();return;}
-  renderFolders();
-  const list=currentList();
-  $('#viewArea').innerHTML=`
-    <div class="content-head"><h2>${activeFolder==='__all__'?'전체 보기':esc(activeFolder)}</h2><span class="meta">${list.length}장${searchTerm?` · "${esc(searchTerm)}" 검색`:''}</span></div>
-    <div class="toolbar"><div class="seg"><button id="segCozy" class="${density==='cozy'?'on':''}">큰 보기</button><button id="segDense" class="${density==='dense'?'on':''}">조밀 보기</button></div></div>
-    <div class="grid g-${density}" id="grid"></div>`;
-  $('#segCozy').onclick=()=>{density='cozy';render()};$('#segDense').onclick=()=>{density='dense';render()};
-  const grid=$('#grid');
-  if(!list.length){grid.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></svg><h3>${searchTerm?'검색 결과가 없어요':'이 폴더엔 이미지가 없어요'}</h3></div>`;return;}
-  grid.innerHTML=list.map(cardHTML).join('');
-  $$('.card',grid).forEach(c=>{
-    const p=items.find(x=>x.id===c.dataset.id);
-    $('.thumb',c).onclick=()=>openLightbox(p);
-    $('.act-copy',c).onclick=e=>{e.stopPropagation();copyImage(p,$('.act-copy',c))};
-    $('.act-del',c).onclick=e=>{e.stopPropagation();askDelete(p)};
+  app.appendChild(el("div","sec-title","⚔️ 배틀 이벤트"));
+  const list=el("div","events");
+  EVENTS.forEach((e,i)=>{
+    const st=P.cleared[e.id]||0;
+    const locked= i>0 && !P.cleared[EVENTS[i-1].id];
+    const b=el("button","ev");
+    b.style.background=`linear-gradient(180deg,${e.color},${e.color}AA)`;
+    b.disabled=locked;
+    const ic=el("div","ev-ic",e.icon); b.appendChild(ic);
+    const mid=el("div"); mid.style.flex="1";
+    mid.appendChild(el("div","ev-tier",`${e.tier} · ${e.mode}`));
+    mid.appendChild(el("div","ev-name",e.grammar));
+    mid.appendChild(el("div","ev-meta",`${e.boss} ${e.bossName} · ${e.sentences.length}스테이지`));
+    b.appendChild(mid);
+    const tr=el("div","ev-tr");
+    tr.appendChild(el("div","ev-star","⭐".repeat(st)+"☆".repeat(3-st)));
+    b.appendChild(tr);
+    if(locked) b.appendChild(el("div","lockbadge","🔒"));
+    else b.onclick=()=>{ sfx("tap"); battle(i); };
+    list.appendChild(b);
   });
-}
-function cardHTML(p){
-  const info=p.path?p.path:p.folder;
-  return `<div class="card" data-id="${p.id}"><div class="thumb">${p.thumb?`<img src="${p.thumb}" alt="${esc(p.name)}"/>`:'<div class="ph"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></svg></div>'}${activeFolder==='__all__'?`<span class="badge">${esc(p.folder)}</span>`:''}</div>
-    <div class="body"><div class="fname" title="${esc(p.name)}">${highlight(p.name,searchTerm)}</div><div class="finfo" title="${esc(info)}">${p.path?highlight(p.path,searchTerm):esc(p.folder)}</div>
-    <div class="actions">
-      <button class="act-copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>복사</button>
-      <button class="act-del" aria-label="삭제" title="삭제"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
-    </div></div></div>`;
-}
-function renderEmpty(){
-  $('#folders').style.display='none';
-  $('#viewArea').innerHTML=`<div class="empty" style="padding:80px 20px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></svg><h3>아직 등록된 이미지가 없어요</h3><p>오른쪽 위 <b>이미지 등록</b>으로 추가하세요.<br>저장 폴더(OneDrive)에 실제 파일로 저장되어 아카이브가 쌓입니다.</p></div>`;
-}
-function renderWelcome(){
-  $('#folders').style.display='none';
-  $('#viewArea').innerHTML=`<div class="welcome"><div class="welcome-card">
-    <div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2z"/></svg></div>
-    <h2>저장 폴더를 한 번 연결하세요</h2>
-    <p>OneDrive로 동기화되는 폴더를 지정하면, 등록한 이미지가 그 폴더에 <b>실제 파일로 저장</b>되어 아카이브가 됩니다. 창을 닫아도 사라지지 않고, OneDrive가 자동 동기화해 구성원이 공유합니다.</p>
-    <div class="steps">
-      <b>1.</b> 아래 <b>저장 폴더 연결</b>을 눌러, 파일 탐색기에 동기화된 SharePoint 폴더 중 <code>상담용이미지</code> 폴더를 선택합니다.<br>
-      &nbsp;&nbsp;&nbsp;(예: OneDrive → 구_영업부 → … → cs app → 이미지파일html → <b>상담용이미지</b>)<br>
-      <b>2.</b> 권한 요청 창이 뜨면 <b>허용</b>을 누릅니다. 이 연결은 한 번만 하면 브라우저가 기억합니다.<br>
-      <b>3.</b> <b>이미지 등록</b>으로 사진을 추가하면 그 폴더에 실제 파일로 저장되고, SharePoint가 자동 동기화해 구성원이 공유합니다.
-    </div>
-    <div class="cta"><button class="btn primary" id="wPick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2z"/></svg>저장 폴더 연결</button><button class="btn ghost" id="wImport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>목록 파일 불러오기</button></div>
-    <div class="welcome-note">엣지·크롬에서 동작합니다. 폴더 안 <code>_library.json</code>에 목록이 저장되어 구성원이 공유합니다.</div>
-  </div></div>`;
-  $('#wPick').onclick=pickFolder;
-  $('#wImport').onclick=()=>$('#importInput').click();
-}
-function renderNeedPermission(){
-  $('#folders').style.display='none';
-  $('#viewArea').innerHTML=`<div class="welcome"><div class="welcome-card">
-    <div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 15v2m-6 4h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2zM8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
-    <h2>저장 폴더 접근 권한이 필요해요</h2>
-    <p>이전에 연결한 폴더가 있습니다. 아래 버튼을 눌러 접근을 허용하면 아카이브를 이어서 사용합니다.</p>
-    <div class="cta"><button class="btn primary" id="wGrant">접근 허용하고 이어서 열기</button></div>
-  </div></div>`;
-  $('#wGrant').onclick=()=>reopenSaved(true);
+  app.appendChild(list);
 }
 
-/* ===== 상태바 ===== */
-/* ===== 불러온 목록 캐시 (폴더 미연결 시에도 유지) ===== */
-async function saveCache(){
-  try{
-    const data={savedAt:Date.now(),items:items.map(m=>({id:m.id,name:m.name,folder:m.folder,
-      path:m.path||'',thumb:m.thumb||'',rel:m.rel||'',ts:m.ts}))};
-    await idbSet('cache',data);
-  }catch(_){}
-}
-async function loadCache(){
-  try{
-    const d=await idbGet('cache');
-    if(!d||!d.items||!d.items.length)return false;
-    items=d.items.map(m=>({...m,file:null}));
-    return true;
-  }catch(_){return false}
-}
+/* ================= 배틀 ================= */
+function battle(evIdx){
+  const EV=EVENTS[evIdx];
+  const rounds=shuffle(EV.sentences);
+  const me=BRAWLERS[P.brawler];
+  let idx=0, lives=3, combo=0, gotTr=0, gotGem=0, gotXp=0;
+  const bossMax=rounds.length;
+  let bossHp=bossMax;
 
-/* ===== 저장 지속성 진단 ===== */
-let storageWarn=false;
-async function checkPersistence(){
-  try{
-    // 샌드박스/미리보기 창은 저장소가 매번 초기화됨 → 표식으로 확인
-    const mark=await idbGet('persistCheck');
-    if(!mark)await idbSet('persistCheck',{t:Date.now()});
-    // 저장소 자체가 막힌 경우
-    if(!window.indexedDB){storageWarn=true;return;}
-    // iframe(미리보기) 안에서 실행 중인지
-    if(window.self!==window.top)storageWarn=true;
-  }catch(_){storageWarn=true}
-}
-
-function updateStatus(){
-  const el=$('#statusRow');
-  if(storageWarn){
-    el.innerHTML=`<div class="status warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg><span><b>주의:</b> 미리보기 창에서 열려 있어 저장이 유지되지 않습니다. 자료가 매번 사라진다면 이 창을 닫고 <b>엣지 브라우저에서 직접</b> 여세요.</span></div>`;
-    return;
-  }
-  if(mode!=='fsa'){
-    el.innerHTML=`<div class="status warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg><span>이 환경은 폴더 직접 저장이 지원되지 않아 <b>파일 내보내기/불러오기</b> 방식으로 동작합니다. (엣지·크롬 + https 권장)</span></div>`;
-    return;
-  }
-  if(!dirHandle){el.innerHTML='';return;}
-  el.innerHTML=`<div class="status ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg><span>저장 폴더 연결됨 · 등록 시 <b>OneDrive 폴더에 자동 저장</b>됩니다</span><span class="mini" id="miReload">새로고침</span></div>`;
-  const mr=$('#miReload');if(mr)mr.onclick=()=>loadLibrary();
-}
-
-/* ===== 복사 ===== */
-async function getBlobFor(p){
-  const f=await readImageFile(p);
-  if(f)return f;
-  if(p.thumb){const r=await fetch(p.thumb);return await r.blob()}
-  return null;
-}
-async function copyImage(p,btn){
-  const done=()=>{if(btn){btn.classList.add('done');btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>복사됨';setTimeout(()=>{btn.classList.remove('done');btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>복사'},1600)}};
-  try{
-    const blob=await getBlobFor(p);
-    if(!blob)throw new Error('이미지 데이터 없음');
-    let out=blob;if(blob.type!=='image/png')out=await toPng(blob);
-    if(navigator.clipboard&&window.ClipboardItem){await navigator.clipboard.write([new ClipboardItem({'image/png':out})]);done();toast('이미지 복사됨 · 채팅방에 Ctrl+V');return;}
-    throw new Error('no-api');
-  }catch(e){
-    try{const blob=await getBlobFor(p);const url=URL.createObjectURL(blob);const ok=await copyViaExec(url);URL.revokeObjectURL(url);if(ok){done();toast('이미지 복사됨 · 채팅방에 Ctrl+V');return}}catch(_){}
-    openLightbox(p);toast('자동 복사가 막힌 환경이에요. 크게 열린 이미지를 우클릭→복사 하세요',false);
-  }
-}
-function toPng(blob){return new Promise((res,rej)=>{const url=URL.createObjectURL(blob);const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;c.getContext('2d').drawImage(img,0,0);URL.revokeObjectURL(url);c.toBlob(b=>b?res(b):rej(new Error('변환 실패')),'image/png')};img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('로드 실패'))};img.src=url})}
-function copyViaExec(url){return new Promise(res=>{const img=new Image();img.onload=()=>{const h=document.createElement('div');h.contentEditable='true';h.style.cssText='position:fixed;left:-9999px;top:0;opacity:0';h.appendChild(img);document.body.appendChild(h);const r=document.createRange();r.selectNode(img);const s=window.getSelection();s.removeAllRanges();s.addRange(r);let ok=false;try{ok=document.execCommand('copy')}catch(_){}s.removeAllRanges();h.remove();res(ok)};img.onerror=()=>res(false);img.src=url})}
-async function copyPath(p){if(!p.path){toast('저장된 경로가 없어요',false);return}try{await navigator.clipboard.writeText(p.path);toast('원본 경로를 복사했어요')}catch(e){const ta=document.createElement('textarea');ta.value=p.path;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('원본 경로를 복사했어요')}catch(_){toast('경로 복사 실패',false)}ta.remove()}}
-
-/* ===== 삭제 ===== */
-async function askDelete(p){
-  if(!confirm(`"${p.name}" 이미지를 삭제할까요?\n저장 폴더에서도 파일이 삭제됩니다.`))return;
-  try{
-    if(mode==='fsa'&&dirHandle&&p.rel){
-      const parts=p.rel.split('/');
-      let dir=dirHandle;
-      for(let i=0;i<parts.length-1;i++)dir=await dir.getDirectoryHandle(parts[i]);
-      await dir.removeEntry(parts[parts.length-1]);
+  function finish(win){
+    const stars= win ? (lives>=3?3:lives===2?2:1) : 0;
+    P.trophies+=gotTr; P.gems+=gotGem; P.xp+=gotXp;
+    const prev=P.cleared[EV.id]||0;
+    let newB=null;
+    if(win){
+      P.cleared[EV.id]=Math.max(prev,stars);
+      const bi=evIdx+1;
+      if(bi<BRAWLERS.length && !P.unlocked.includes(bi)){ P.unlocked.push(bi); newB=BRAWLERS[bi]; }
     }
-    items=items.filter(x=>x.id!==p.id);
-    await saveLibrary();
-    render();updateStatus();toast('삭제했어요');
-  }catch(e){toast('삭제 실패: '+(e.message||e),false)}
-}
+    result(evIdx,{stars,win,tr:gotTr,gem:gotGem,newB});
+  }
 
-/* ===== 라이트박스 ===== */
-let lbCurrent=null,lbUrl=null;
-async function openLightbox(p){
-  lbCurrent=p;$('#lbTitle').firstChild.textContent=p.name;$('#lbSub').textContent=p.path||p.folder;
-  if(lbUrl){URL.revokeObjectURL(lbUrl);lbUrl=null}
-  const f=await readImageFile(p);
-  if(f){lbUrl=URL.createObjectURL(f);$('#lbImg').src=lbUrl}else $('#lbImg').src=p.thumb||'';
-  $('#lightbox').classList.add('show');
-}
-$('#lbClose').onclick=()=>{$('#lightbox').classList.remove('show');if(lbUrl){URL.revokeObjectURL(lbUrl);lbUrl=null}};
-$('#lbCopy').onclick=()=>lbCurrent&&copyImage(lbCurrent);
-$('#lbPath').onclick=()=>lbCurrent&&copyPath(lbCurrent);
-$('#lightbox').onclick=e=>{if(e.target.id==='lightbox')$('#lbClose').onclick()};
+  function draw(){
+    const cur=rounds[idx];
+    let order=[], pool=shuffle(cur.chunks);
+    app.innerHTML="";
 
-/* ===== 메뉴 ===== */
-$('#menuBtn').onclick=e=>{e.stopPropagation();$('#menuPop').classList.toggle('show')};
-document.addEventListener('click',()=>$('#menuPop').classList.remove('show'));
-$('#menuPop').onclick=e=>e.stopPropagation();
-$('#changeFolderBtn').onclick=()=>{$('#menuPop').classList.remove('show');pickFolder()};
-$('#reloadBtn').onclick=()=>{$('#menuPop').classList.remove('show');if(dirHandle)loadLibrary();else pickFolder()};
-$('#exportLightBtn').onclick=()=>{$('#menuPop').classList.remove('show');exportLibrary(false)};
-$('#exportFullBtn').onclick=()=>{$('#menuPop').classList.remove('show');exportLibrary(true)};
-$('#importBtn').onclick=()=>{$('#menuPop').classList.remove('show');$('#importInput').click()};
+    const top=el("div","btop");
+    const x=el("button","xbtn","✕"); x.onclick=home; top.appendChild(x);
+    const pb=el("div","bprog"); const pf=el("div","bprogf");
+    pf.style.width=(idx/rounds.length*100)+"%"; pb.appendChild(pf); top.appendChild(pb);
+    top.appendChild(el("div","lives","❤️".repeat(lives)+"🖤".repeat(3-lives)));
+    app.appendChild(top);
 
-/* ===== 목록 내보내기 ===== */
-function blobToDataURL(blob){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(blob)})}
-async function exportLibrary(includeFull){
-  if(!items.length){toast('내보낼 이미지가 없어요',false);return;}
-  if(includeFull && !confirm(`원본 화질까지 포함해 내보냅니다.\n이미지 ${items.length}장 · 파일이 커질 수 있어요.\n계속할까요?`))return;
-  lb(true,10);
-  const out={format:'arte-cs-archive',version:1,kind:includeFull?'full':'light',
-    exportedAt:new Date().toISOString(),count:items.length,items:[]};
-  for(let i=0;i<items.length;i++){
-    const m=items[i];
-    const rec={id:m.id,name:m.name,folder:m.folder,path:m.path||'',thumb:m.thumb||'',rel:m.rel||'',ts:m.ts};
-    if(includeFull){
-      try{const f=await readImageFile(m);if(f)rec.full=await blobToDataURL(f);}catch(_){}
+    // VS 라인 (나 vs 보스)
+    const vs=el("div","vs-row");
+    const f1=el("div","fighter");
+    const a1=el("div","f-av",me.emoji); a1.style.background=`linear-gradient(180deg,${me.color},${me.color}99)`;
+    f1.appendChild(a1);
+    const h1=el("div","f-hp"); const h1f=el("div","f-hpf");
+    h1f.style.cssText=`width:${lives/3*100}%;background:linear-gradient(90deg,#3DDC5C,#00C2FF)`;
+    h1.appendChild(h1f); f1.appendChild(h1); f1.appendChild(el("div","f-name",me.name));
+    vs.appendChild(f1);
+    vs.appendChild(el("div","vs-txt","VS"));
+    const f2=el("div","fighter");
+    const a2=el("div","f-av",EV.boss); a2.style.background="linear-gradient(180deg,#FF6B85,#901028)";
+    f2.appendChild(a2);
+    const h2=el("div","f-hp"); const h2f=el("div","f-hpf");
+    h2f.style.cssText=`width:${bossHp/bossMax*100}%;background:linear-gradient(90deg,#FF3B5C,#FF8A00)`;
+    h2.appendChild(h2f); f2.appendChild(h2); f2.appendChild(el("div","f-name",EV.bossName));
+    vs.appendChild(f2);
+    app.appendChild(vs);
+
+    if(combo>1) app.appendChild(el("div","combo-tag",`🔥 ${combo} KILL STREAK`));
+
+    const chip=el("div","mode-chip",`${EV.icon} ${EV.mode}`);
+    chip.style.background=EV.color; chip.style.color="#1B1F3B";
+    const cw=el("div"); cw.style.textAlign="center"; cw.appendChild(chip); app.appendChild(cw);
+
+    const mis=el("div","mission");
+    mis.appendChild(el("div","mission-lbl","MISSION"));
+    mis.appendChild(el("div","mission-ko",cur.ko));
+    app.appendChild(mis);
+
+    const body=el("div"); app.appendChild(body);
+    const fbSlot=el("div"); app.appendChild(fbSlot);
+
+    function bad(msg){
+      combo=0; lives--; sfx("bad");
+      fbSlot.innerHTML="";
+      const f=el("div","fb","💢 "+msg);
+      f.style.cssText+="background:linear-gradient(180deg,#FF6B85,#B01634);color:#fff";
+      fbSlot.appendChild(f);
+      if(lives<=0) setTimeout(()=>finish(false),1000);
     }
-    out.items.push(rec);
-    $('#loadbar').style.width=(10+85*(i+1)/items.length)+'%';
+
+    /* --- STEP 1 : 단어 조합 --- */
+    function step1(){
+      body.innerHTML="";
+      body.appendChild(el("div","hint","단어를 순서대로 눌러 공격을 조합하라!"));
+      const slot=el("div","slot");
+      if(!order.length) slot.appendChild(el("span","slot-ph","여기에 문장이 만들어져요"));
+      order.forEach((w,i)=>{
+        const c=el("button","wchip on",w);
+        c.onclick=()=>{ sfx("tap"); order.splice(i,1); pool.push(w); step1(); };
+        slot.appendChild(c);
+      });
+      body.appendChild(slot);
+      const pd=el("div","pool");
+      pool.forEach((w,i)=>{
+        const c=el("button","wchip",w);
+        c.onclick=()=>{ sfx("tap"); order.push(w); pool.splice(i,1); step1(); };
+        pd.appendChild(c);
+      });
+      body.appendChild(pd);
+      const ok=order.length===cur.chunks.length;
+      const btn=el("button","bigbtn","⚔️ 공격!");
+      btn.style.opacity=ok?1:.45; btn.disabled=!ok;
+      btn.onclick=()=>{
+        if(order.join(" ")===cur.chunks.join(" ")){ sfx("hit"); say(cur.en); step2(); }
+        else bad("조합 실패! 어순을 다시 확인하라.");
+      };
+      body.appendChild(btn);
+    }
+
+    /* --- STEP 2 : 스피킹 필살기 --- */
+    function step2(){
+      body.innerHTML="";
+      const sc=el("div","saycard");
+      sc.appendChild(el("div","say-en",cur.en));
+      const pbn=el("button","playbtn","🔊 다시 듣기"); pbn.onclick=()=>say(cur.en);
+      sc.appendChild(pbn);
+      body.appendChild(sc);
+      body.appendChild(el("div","hint","🎤 큰 소리로 외쳐 필살기를 발동하라!"));
+      const mic=el("button","bigbtn red","🎤 필살기 발동");
+      mic.onclick=()=>listen(mic);
+      body.appendChild(mic);
+      if(!srOK) body.appendChild(el("div","warn","음성인식 미지원 브라우저 — Chrome 권장 (조합 성공 시 자동 통과)"));
+    }
+
+    function listen(mic){
+      if(!srOK){ hit("조합 성공! 필살기 명중!"); return; }
+      const r=new SR(); r.lang="en-US"; r.interimResults=false; r.maxAlternatives=3;
+      mic.textContent="🎙️ 듣는 중..."; mic.disabled=true; mic.style.opacity=".8";
+      r.onresult=e=>{
+        const heard=[...e.results[0]].map(a=>a.transcript);
+        const perfect=heard.some(h=>norm(h)===norm(cur.en));
+        const close=heard.some(h=>{
+          const a=norm(h).split(" "),b=norm(cur.en).split(" ");
+          return b.filter(w=>a.includes(w)).length/b.length>=.7;
+        });
+        if(perfect) hit("완벽한 명중!",1);
+        else if(close) hit("살짝 빗나갔지만 명중!",.7);
+        else { bad(`빗나감! 들린 발음: "${heard[0]||"..."}"`); if(lives>0) step2(); }
+      };
+      r.onerror=()=>{ fbSlot.innerHTML=""; const f=el("div","fb","🎙️ 마이크를 확인하라!"); f.style.cssText+="background:linear-gradient(180deg,#5CE0FF,#0090D8);color:#00293D"; fbSlot.appendChild(f); step2(); };
+      try{ r.start(); }catch(e){}
+    }
+
+    /* --- 명중 = 보상 --- */
+    function hit(msg,mult=1){
+      combo++;
+      bossHp=Math.max(0,bossHp-1);
+      h2f.style.width=(bossHp/bossMax*100)+"%";
+      const base=6+cur.chunks.length;
+      const tr=Math.round(base*mult*(1+combo*.2));
+      const gem=combo>=3?2:1;
+      const xp=cur.chunks.length*10;
+      gotTr+=tr; gotGem+=gem; gotXp+=xp;
+      sfx("win");
+      const last=idx+1>=rounds.length;
+      reward({tr,gem,combo,perfect:mult>=1,msg,boss:last},()=>{
+        if(last) finish(true); else { idx++; draw(); }
+      });
+    }
+    step1();
   }
-  const blob=new Blob([JSON.stringify(out)],{type:'application/json'});
-  const stamp=new Date().toISOString().slice(0,10).replace(/-/g,'');
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=`아르떼CS이미지목록_${stamp}${includeFull?'_원본포함':''}.json`;
-  document.body.appendChild(a);a.click();
-  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1200);
-  lb(false);
-  const mb=(blob.size/1048576).toFixed(1);
-  toast(`목록 파일 저장됨 (${mb}MB) · 공유폴더에 올려두세요`);
+  draw();
 }
 
-/* ===== 목록 불러오기 (가볍게/원본 포함 모두 인식) ===== */
-$('#importInput').onchange=async e=>{
-  const file=e.target.files[0];e.target.value='';if(!file)return;
-  let data;
-  try{data=JSON.parse(await file.text())}catch(_){toast('올바른 목록 파일이 아니에요',false);return}
-  const list=(data&&data.items)||[];
-  if(!list.length){toast('파일에 이미지가 없어요',false);return}
-  const kind=data.kind==='full'?'원본 포함':'가벼운';
-  let merge=true;
-  if(items.length){
-    merge=confirm(`${kind} 목록 ${list.length}장을 불러옵니다.\n\n[확인] 기존 목록에 추가 (병합)\n[취소] 기존 목록을 지우고 교체`);
+/* ================= 보상 오버레이 ================= */
+function reward(o,done){
+  const ov=el("div","ovl");
+  ov.appendChild(el("div","ovl-bg"));
+  const card=el("div","rcard");
+  card.appendChild(el("div","rring"));
+  const face= o.boss?"👑" : o.combo>=3?"💥" : o.perfect?"🎯":"👊";
+  card.appendChild(el("div","rface",face));
+  const msg= o.boss?"보스 격파!" : o.combo>=3?`${o.combo} KILL STREAK!` : o.perfect?"완벽 명중!":"명중!";
+  const rm=el("div","rmsg",msg);
+  rm.style.color= o.combo>=3?"#FFC93C":"#fff";
+  card.appendChild(rm);
+  const rr=el("div","rrewards");
+  rr.appendChild(el("div","rpill rp-tr",`🏆 +${o.tr}`));
+  rr.appendChild(el("div","rpill rp-gem",`💎 +${o.gem}`));
+  card.appendChild(rr);
+  ov.appendChild(card);
+
+  for(let i=0;i<7;i++){
+    const c=el("div","coin",i%2?"🏆":"💎");
+    c.style.left=(34+Math.random()*32)+"%"; c.style.top="52%";
+    c.style.animationDelay=(i*.07)+"s"; ov.appendChild(c);
   }
-  lb(true,15);
-  if(!merge)items=[];
-  const existing=new Set(items.map(x=>x.id));
-  let added=0;
-  for(let i=0;i<list.length;i++){
-    const m=list[i];
-    if(existing.has(m.id))continue;
-    const it={id:m.id||uid(),name:m.name||'image',folder:m.folder||'미분류',
-      path:m.path||'',thumb:m.thumb||'',rel:m.rel||'',ts:m.ts||Date.now(),file:null};
-    if(m.full){try{it.file=dataURLtoBlob(m.full,it.name)}catch(_){}}
-    items.push(it);added++;
-    $('#loadbar').style.width=(15+80*(i+1)/list.length)+'%';
+  if(o.combo>=3||o.boss){
+    const cols=["#FFC93C","#FF8A00","#FF3B5C","#00C2FF","#A64DFF","#3DDC5C"];
+    for(let i=0;i<24;i++){
+      const f=el("div","cf");
+      f.style.left=Math.random()*100+"%";
+      f.style.background=cols[i%cols.length];
+      f.style.animationDelay=(Math.random()*.4)+"s"; ov.appendChild(f);
+    }
   }
-  lb(false);
-  activeFolder='__all__';render();updateStatus();
-  await saveCache();
-  toast(`${added}장 불러왔어요 · 다음에 열면 자동으로 복원됩니다`);
-};
-function dataURLtoBlob(d,name){
-  const [head,body]=d.split(',');
-  const mime=(head.match(/:(.*?);/)||[])[1]||'image/png';
-  const bin=atob(body);const arr=new Uint8Array(bin.length);
-  for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
-  return new File([arr],name||'image',{type:mime});
+  app.appendChild(ov);
+  const hold=(o.combo>=3||o.boss)?1700:1250;
+  setTimeout(()=>{ ov.style.transition="opacity .3s"; ov.style.opacity="0"; },hold-300);
+  setTimeout(()=>{ ov.remove(); done(); },hold);
 }
 
-/* ===== 검색 ===== */
-$('#search').addEventListener('input',e=>{searchTerm=e.target.value.trim();$('#searchClear').classList.toggle('show',!!searchTerm);if(items.length)render()});
-$('#searchClear').onclick=()=>{$('#search').value='';searchTerm='';$('#searchClear').classList.remove('show');render();$('#search').focus()};
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#lightbox').classList.contains('show'))$('#lbClose').onclick();$$('.overlay.show').forEach(o=>o.classList.remove('show'))}if(e.key==='/'&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){e.preventDefault();$('#search').focus()}});
-$$('[data-close]').forEach(b=>b.onclick=()=>$('#'+b.dataset.close).classList.remove('show'));
+/* ================= 결과 ================= */
+function result(evIdx,r){
+  app.innerHTML="";
+  const w=el("div","res");
+  const face=el("div",null,r.win?"🏆":"💀");
+  face.style.cssText="font-size:70px;animation:pop .5s";
+  w.appendChild(face);
+  w.appendChild(el("div","res-banner",r.win?"VICTORY!":"DEFEAT"));
+  w.appendChild(el("div","res-stars","⭐".repeat(r.stars)+"☆".repeat(3-r.stars)));
 
-/* ===== 시작 ===== */
-(async function init(){
-  $('#addBtn').disabled=false;
-  await checkPersistence();
-  updateStatus();
-  if(mode==='fsa'){
-    const restored=await reopenSaved(false);
-    if(restored)return;
-    if(dirHandle)return;           // 권한 대기 화면 표시 중
-    const cached=await loadCache(); // 폴더 미연결이면 저장된 목록 복원
-    if(cached){render();updateStatus();return;}
-    renderWelcome();
-  }else{
-    const cached=await loadCache();
-    if(cached){render();updateStatus();return;}
-    renderFallback();
+  const g=el("div","res-grid");
+  g.appendChild(el("div","res-box",`<div class="res-n">🏆 ${P.trophies}</div><div class="res-l">트로피</div>`));
+  g.appendChild(el("div","res-box",`<div class="res-n">💎 ${P.gems}</div><div class="res-l">젬</div>`));
+  g.appendChild(el("div","res-box",`<div class="res-n">${rankOf(P.trophies)}</div><div class="res-l">랭크</div>`));
+  w.appendChild(g);
+
+  if(r.newB){
+    const nb=el("div","newbrawler");
+    nb.appendChild(el("div","nb-t","🎁 새로운 브롤러 해금!"));
+    nb.appendChild(el("div","nb-n",`${r.newB.emoji} ${r.newB.name}`));
+    w.appendChild(nb);
   }
-})();
 
-/* 폴백(파일 방식) — http/미지원 브라우저 */
-function renderFallback(){
-  $('#folders').style.display='none';
-  $('#viewArea').innerHTML=`<div class="welcome"><div class="welcome-card">
-    <div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg></div>
-    <h2>파일 방식으로 동작합니다</h2>
-    <p>이 환경(현재 주소가 http이거나 미지원 브라우저)에서는 폴더 직접 저장이 제한됩니다.<br>대신 <b>이미지 등록</b> 후 목록을 파일로 저장하고, 열 때 그 파일을 불러오는 방식으로 아카이브를 유지할 수 있어요.</p>
-    <div class="note warn" style="text-align:left">가장 안정적으로 쓰려면 이 페이지를 <b>엣지·크롬에서 https 주소</b>로 여세요. 그러면 OneDrive 폴더에 자동 저장됩니다.</div>
-    <div class="cta">
-      <button class="btn primary" id="fbAdd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>이미지 등록</button>
-      <button class="btn ghost" id="fbImport">목록 파일 불러오기</button>
-    </div>
-  </div></div>`;
-  $('#fbAdd').onclick=openAdd;
-  $('#fbImport').onclick=()=>$('#importInput').click();
+  const b1=el("button","bigbtn","🏠 로비로"); b1.onclick=home; w.appendChild(b1);
+  const b2=el("button","bigbtn ghost","🔁 재도전"); b2.onclick=()=>battle(evIdx); w.appendChild(b2);
+  app.appendChild(w);
 }
+
+home();
 </script>
 </body>
 </html>
