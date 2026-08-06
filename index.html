@@ -66,6 +66,32 @@
   .folder .ct{font-size:11.5px;color:var(--hint);background:var(--bg);padding:1px 8px;border-radius:999px}
   .folder.active .ct{background:#fff}
 
+  /* ===== 순서 편집 ===== */
+  .side-h .ordbtn{float:right;font-size:11px;letter-spacing:0;text-transform:none;font-weight:600;color:var(--accent-ink);background:var(--accent-soft);border-radius:999px;padding:2px 9px;cursor:pointer}
+  .side-h .ordbtn.on{background:var(--accent);color:#fff}
+  .folder.reord{cursor:grab;background:var(--surface);border:1px dashed var(--line-strong)}
+  .folder.reord:active{cursor:grabbing}
+  .folder .grip{width:14px;height:14px;flex-shrink:0;color:var(--hint)}
+  .folder .arw{flex:0 0 auto;width:22px;height:22px;border-radius:6px;display:grid;place-items:center;color:var(--muted);background:var(--bg);border:1px solid var(--line)}
+  .folder .arw:hover{color:var(--accent-ink);border-color:var(--accent)}
+  .folder .arw svg{width:12px;height:12px}
+  .folder.dragging{opacity:.45}
+  .folder.dropline{box-shadow:0 -2px 0 0 var(--accent) inset;border-color:var(--accent)}
+  .ordbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--accent-soft);color:var(--accent-ink);border-radius:10px;padding:9px 13px;font-size:12.5px;margin:12px 0 16px;line-height:1.6}
+  .ordbar b{font-weight:700}
+  .ordbar .sp{margin-left:auto;display:flex;gap:8px}
+  .ordbar button{height:30px;padding:0 12px;border-radius:8px;font-size:12.5px;font-weight:600;background:var(--surface);border:1px solid var(--line-strong);color:var(--ink)}
+  .ordbar button.done{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .card.reord{cursor:grab}
+  .card.reord:active{cursor:grabbing}
+  .card.dragging{opacity:.4}
+  .card.dropline{outline:3px solid var(--accent);outline-offset:2px}
+  .card .ordno{position:absolute;top:8px;right:8px;z-index:2;background:var(--accent);color:#fff;font-size:11px;font-weight:700;min-width:22px;height:22px;padding:0 6px;border-radius:999px;display:grid;place-items:center}
+  .card .ordtools{display:flex;gap:6px;margin-top:9px}
+  .card .ordtools button{flex:1;height:32px;border-radius:8px;background:var(--bg);border:1px solid var(--line);color:var(--muted);display:inline-flex;align-items:center;justify-content:center}
+  .card .ordtools button:hover{color:var(--accent-ink);border-color:var(--accent);background:var(--accent-soft)}
+  .card .ordtools button svg{width:14px;height:14px}
+
   .content-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px;flex-wrap:wrap}
   .content-head h2{font-size:21px;font-weight:700;letter-spacing:-.3px}
   .content-head .meta{font-size:13px;color:var(--muted)}
@@ -92,6 +118,9 @@
   .act-copy{flex:1;background:var(--accent);color:#fff}
   .act-copy:hover{filter:brightness(1.06)}
   .act-copy.done{background:var(--ok)}
+  .act-ren{flex:0 0 auto;width:34px;background:var(--bg);color:var(--muted);border:1px solid var(--line)!important}
+  .act-ren:hover{color:var(--accent-ink);border-color:var(--accent)!important;background:var(--accent-soft)}
+  .folder .arw.ren:hover{color:var(--accent-ink);border-color:var(--accent)}
   .act-del{flex:0 0 auto;width:34px;background:var(--bg);color:var(--muted);border:1px solid var(--line)!important}
   .act-del:hover{color:var(--danger);border-color:var(--danger)!important;background:var(--danger-soft)}
 
@@ -286,6 +315,8 @@ let dirHandle=null;
 let items=[];          // {id,name,folder,path,file,thumb,ts}
 let activeFolder='__all__';
 let searchTerm='', density='cozy';
+let folderOrder=[];    // 사용자가 정한 폴더 표시 순서
+let reorder=false;     // 순서 편집 모드
 let mode = (HAS_FSA && SECURE) ? 'fsa' : 'file'; // fsa: 폴더직접저장 / file: 파일내보내기 폴백
 const IMG_RE=/\.(jpe?g|jpe|jfif|png|gif|webp|bmp|dib|avif|svg|heic|heif|tiff?|ico)$/i;
 function isImage(f){const n=(f.name||'').trim();return IMG_RE.test(n)||(f.type&&f.type.toLowerCase().startsWith('image/'))}
@@ -338,7 +369,8 @@ async function loadLibrary(){
     const f=await fh.getFile();
     const j=JSON.parse(await f.text());
     meta=(j&&j.items)||[];
-  }catch(e){ meta=[]; } // 최초엔 없음
+    folderOrder=Array.isArray(j&&j.folderOrder)?j.folderOrder.slice():[];
+  }catch(e){ meta=[]; folderOrder=[]; } // 최초엔 없음
   // 각 항목의 실제 파일을 읽어 File 확보 (썸네일은 메타에 저장돼 즉시 표시)
   for(const m of meta){
     items.push({id:m.id,name:m.name,folder:m.folder||'미분류',path:m.path||'',thumb:m.thumb||'',rel:m.rel||'',ts:m.ts||Date.now(),file:null});
@@ -352,7 +384,8 @@ async function loadLibrary(){
 /* _library.json 저장 */
 async function saveLibrary(){
   if(mode!=='fsa'||!dirHandle)return;
-  const data={format:'arte-cs-archive',version:1,updatedAt:new Date().toISOString(),
+  const data={format:'arte-cs-archive',version:2,updatedAt:new Date().toISOString(),
+    folderOrder:folderOrder.slice(),
     items:items.map(m=>({id:m.id,name:m.name,folder:m.folder,path:m.path||'',thumb:m.thumb||'',rel:m.rel||'',ts:m.ts}))};
   const fh=await dirHandle.getFileHandle(LIB_FILE,{create:true});
   const w=await fh.createWritable();
@@ -435,6 +468,8 @@ $('#saveAdd').onclick=async()=>{
   lb(false);
   $('#addOverlay').classList.remove('show');
   if(folder!=='미분류')activeFolder=folder;
+  reorder=false;syncFolderOrder();
+  try{ await saveCache(); }catch(_){}
   render();updateStatus();
   toast(`${ok}장 저장 완료 · OneDrive가 자동 동기화합니다`);
 };
@@ -442,23 +477,116 @@ $('#saveAdd').onclick=async()=>{
 /* ===== 폴더/목록 ===== */
 function folderCounts(){const m={};items.forEach(p=>m[p.folder]=(m[p.folder]||0)+1);return m}
 function folderNames(){return Object.keys(folderCounts())}
-function renderFolders(){
-  const counts=folderCounts();const names=folderNames().sort((a,b)=>a.localeCompare(b,'ko'));
-  const el=$('#folders');el.style.display='';
-  let html=`<div class="side-h">폴더 (${names.length})</div>`;
-  html+=fBtn('__all__','전체 보기',items.length,'all');
-  names.forEach(n=>html+=fBtn(n,n,counts[n]));
-  el.innerHTML=html;
-  $$('.folder',el).forEach(b=>b.onclick=()=>{activeFolder=b.dataset.f;render()});
+
+/* ===== 순서(폴더·이미지) ===== */
+/* 폴더 순서 배열을 실제 폴더 목록과 동기화 (새 폴더는 뒤에 이름순으로 추가) */
+function syncFolderOrder(){
+  const names=folderNames();
+  folderOrder=folderOrder.filter(n=>names.includes(n));
+  const missing=names.filter(n=>folderOrder.indexOf(n)<0).sort((a,b)=>a.localeCompare(b,'ko'));
+  if(missing.length)folderOrder=folderOrder.concat(missing);
+  return folderOrder;
 }
-function fBtn(id,name,count,type){
-  const ico=type==='all'?'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>':'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2z"/></svg>';
+let orderSaveTimer=null;
+function persistOrder(msg){
+  clearTimeout(orderSaveTimer);
+  orderSaveTimer=setTimeout(async()=>{
+    try{ await saveLibrary(); }catch(e){ toast('순서 저장 실패: '+(e.message||e),false); }
+    await saveCache();
+  },500);
+  if(msg)toast(msg);
+}
+function toggleReorder(on){
+  reorder=(on===undefined)?!reorder:!!on;
+  if(reorder&&searchTerm){$('#search').value='';searchTerm='';$('#searchClear').classList.remove('show')}
+  render();
+  if(!reorder)persistOrder('순서를 저장했어요');
+}
+/* 폴더 이동 */
+function moveFolder(name,dir){
+  const o=syncFolderOrder();const i=o.indexOf(name),j=i+dir;
+  if(i<0||j<0||j>=o.length)return;
+  o.splice(j,0,o.splice(i,1)[0]);
+  render();persistOrder();
+}
+function dropFolder(src,dst){
+  if(!src||src===dst)return;
+  const o=syncFolderOrder();const si=o.indexOf(src),di=o.indexOf(dst);
+  if(si<0||di<0)return;
+  o.splice(si,1);
+  o.splice(o.indexOf(dst)+(si<di?1:0),0,src);
+  render();persistOrder();
+}
+/* 이미지 이동 (items 배열 순서 = 화면 표시 순서) */
+function dropItem(srcId,dstId){
+  if(!srcId||srcId===dstId)return;
+  const si=items.findIndex(x=>x.id===srcId),di=items.findIndex(x=>x.id===dstId);
+  if(si<0||di<0)return;
+  const [it]=items.splice(si,1);
+  items.splice(items.findIndex(x=>x.id===dstId)+(si<di?1:0),0,it);
+  render();persistOrder();
+}
+function moveItem(id,dir){
+  const list=currentList();
+  const i=list.findIndex(x=>x.id===id),j=i+dir;
+  if(i<0||j<0||j>=list.length)return;
+  dropItem(id,list[j].id);
+}
+/* 자동 정렬 */
+function sortFoldersByName(){
+  folderOrder=folderNames().sort((a,b)=>a.localeCompare(b,'ko'));
+  render();persistOrder('폴더를 이름순으로 정렬했어요');
+}
+function sortItemsInView(cmp,msg){
+  const view=activeFolder==='__all__'?items.slice():items.filter(p=>p.folder===activeFolder);
+  if(view.length<2)return;
+  const set=new Set(view.map(p=>p.id));
+  const pos=[];items.forEach((p,i)=>{if(set.has(p.id))pos.push(i)});
+  const sorted=view.slice().sort(cmp);
+  pos.forEach((p,k)=>items[p]=sorted[k]);
+  render();persistOrder(msg);
+}
+
+function renderFolders(){
+  const counts=folderCounts();const names=syncFolderOrder();
+  const el=$('#folders');el.style.display='';
+  let html=`<div class="side-h">폴더 (${names.length})<span class="ordbtn ${reorder?'on':''}" id="ordToggle">${reorder?'순서 완료':'순서 변경'}</span></div>`;
+  html+=fBtn('__all__','전체 보기',items.length,'all',0,0);
+  names.forEach((n,i)=>html+=fBtn(n,n,counts[n],'',i,names.length));
+  el.innerHTML=html;
+  const tg=$('#ordToggle');if(tg)tg.onclick=()=>toggleReorder();
+  $$('.folder',el).forEach(b=>{
+    const f=b.dataset.f;
+    if(reorder&&f!=='__all__'){
+      b.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain','F:'+f);e.dataTransfer.effectAllowed='move';b.classList.add('dragging')});
+      b.addEventListener('dragend',()=>{b.classList.remove('dragging');$$('.folder',el).forEach(x=>x.classList.remove('dropline'))});
+      b.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';b.classList.add('dropline')});
+      b.addEventListener('dragleave',()=>b.classList.remove('dropline'));
+      b.addEventListener('drop',e=>{e.preventDefault();b.classList.remove('dropline');const d=e.dataTransfer.getData('text/plain')||'';if(d.slice(0,2)==='F:')dropFolder(d.slice(2),f)});
+      $$('.arw',b).forEach(a=>a.onclick=ev=>{ev.stopPropagation();if(a.dataset.d==='ren')askRenameFolder(f);else moveFolder(f,a.dataset.d==='up'?-1:1)});
+      b.addEventListener('click',ev=>{if(ev.target.closest('.arw'))return;activeFolder=f;render()});
+    }else{
+      b.onclick=()=>{activeFolder=f;render()};
+    }
+  });
+}
+const ICO_ALL='<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>';
+const ICO_FOLDER='<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2z"/></svg>';
+const ICO_GRIP='<svg class="grip" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
+function fBtn(id,name,count,type,idx,total){
+  const ico=type==='all'?ICO_ALL:ICO_FOLDER;
+  if(reorder&&id!=='__all__'){
+    const ren=`<button class="arw ren" data-d="ren" title="폴더 이름 수정"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>`;
+    const up=idx>0?`<button class="arw" data-d="up" title="위로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m18 15-6-6-6 6"/></svg></button>`:'';
+    const dn=idx<total-1?`<button class="arw" data-d="down" title="아래로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg></button>`:'';
+    return `<div class="folder reord ${activeFolder===id?'active':''}" draggable="true" data-f="${esc(id)}">${ICO_GRIP}<span class="nm">${esc(name)}</span>${ren}${up}${dn}</div>`;
+  }
   return `<button class="folder ${activeFolder===id?'active':''}" data-f="${esc(id)}">${ico}<span class="nm">${esc(name)}</span><span class="ct">${count}</span></button>`;
 }
 function currentList(){
   let list=activeFolder==='__all__'?items:items.filter(p=>p.folder===activeFolder);
   if(searchTerm){const q=searchTerm.toLowerCase();list=list.filter(p=>(p.name||'').toLowerCase().includes(q)||(p.folder||'').toLowerCase().includes(q)||(p.path||'').toLowerCase().includes(q))}
-  return list.slice().sort((a,b)=>b.ts-a.ts);
+  return list.slice();
 }
 function highlight(t,q){t=t||'';if(!q)return esc(t);const i=t.toLowerCase().indexOf(q.toLowerCase());if(i<0)return esc(t);return esc(t.slice(0,i))+'<mark>'+esc(t.slice(i,i+q.length))+'</mark>'+esc(t.slice(i+q.length))}
 
@@ -467,27 +595,70 @@ function render(){
   if(!items.length){renderEmpty();return;}
   renderFolders();
   const list=currentList();
+  const ordBar=reorder?`<div class="ordbar">
+      <b>순서 편집 중</b> · 왼쪽 <b>폴더</b>와 아래 <b>이미지</b>를 끌어다 놓아 순서를 바꾸세요. 화살표 버튼으로도 옮길 수 있어요. 폴더의 <b>연필 아이콘</b>을 누르면 이름을 바꿉니다.
+      <span class="sp">
+        <button id="ordSortName">이름순 정렬</button>
+        <button id="ordSortDate">최신순 정렬</button>
+        <button id="ordFolderName">폴더 이름순</button>
+        <button class="done" id="ordDone">편집 완료</button>
+      </span>
+    </div>`:'';
   $('#viewArea').innerHTML=`
     <div class="content-head"><h2>${activeFolder==='__all__'?'전체 보기':esc(activeFolder)}</h2><span class="meta">${list.length}장${searchTerm?` · "${esc(searchTerm)}" 검색`:''}</span></div>
-    <div class="toolbar"><div class="seg"><button id="segCozy" class="${density==='cozy'?'on':''}">큰 보기</button><button id="segDense" class="${density==='dense'?'on':''}">조밀 보기</button></div></div>
+    ${ordBar}
+    <div class="toolbar"><div class="seg"><button id="segCozy" class="${density==='cozy'?'on':''}">큰 보기</button><button id="segDense" class="${density==='dense'?'on':''}">조밀 보기</button></div>
+      ${searchTerm?'':`<button class="btn ghost" id="ordBtn" style="height:34px;padding:0 13px;font-size:12.5px">${ICO_GRIP2}${reorder?'순서 편집 완료':'순서 변경'}</button>`}
+      ${(!searchTerm&&activeFolder!=='__all__')?`<button class="btn ghost" id="renFolderBtn" style="height:34px;padding:0 13px;font-size:12.5px">${ICO_PEN}폴더 이름 수정</button>`:''}
+    </div>
     <div class="grid g-${density}" id="grid"></div>`;
   $('#segCozy').onclick=()=>{density='cozy';render()};$('#segDense').onclick=()=>{density='dense';render()};
+  const ob=$('#ordBtn');if(ob)ob.onclick=()=>toggleReorder();
+  const rf=$('#renFolderBtn');if(rf)rf.onclick=()=>askRenameFolder(activeFolder);
+  if(reorder){
+    $('#ordDone').onclick=()=>toggleReorder(false);
+    $('#ordSortName').onclick=()=>sortItemsInView((a,b)=>(a.name||'').localeCompare(b.name||'','ko',{numeric:true}),'이름순으로 정렬했어요');
+    $('#ordSortDate').onclick=()=>sortItemsInView((a,b)=>b.ts-a.ts,'최신순으로 정렬했어요');
+    $('#ordFolderName').onclick=sortFoldersByName;
+  }
   const grid=$('#grid');
   if(!list.length){grid.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></svg><h3>${searchTerm?'검색 결과가 없어요':'이 폴더엔 이미지가 없어요'}</h3></div>`;return;}
-  grid.innerHTML=list.map(cardHTML).join('');
+  grid.innerHTML=list.map((p,i)=>cardHTML(p,i,list.length)).join('');
   $$('.card',grid).forEach(c=>{
     const p=items.find(x=>x.id===c.dataset.id);
+    if(reorder){
+      c.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain','I:'+p.id);e.dataTransfer.effectAllowed='move';c.classList.add('dragging')});
+      c.addEventListener('dragend',()=>{c.classList.remove('dragging');$$('.card',grid).forEach(x=>x.classList.remove('dropline'))});
+      c.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';c.classList.add('dropline')});
+      c.addEventListener('dragleave',()=>c.classList.remove('dropline'));
+      c.addEventListener('drop',e=>{e.preventDefault();c.classList.remove('dropline');const d=e.dataTransfer.getData('text/plain')||'';if(d.slice(0,2)==='I:')dropItem(d.slice(2),p.id)});
+      $$('.ordtools button',c).forEach(b=>b.onclick=e=>{e.stopPropagation();moveItem(p.id,b.dataset.d==='prev'?-1:1)});
+      return;
+    }
     $('.thumb',c).onclick=()=>openLightbox(p);
     $('.act-copy',c).onclick=e=>{e.stopPropagation();copyImage(p,$('.act-copy',c))};
+    $('.act-ren',c).onclick=e=>{e.stopPropagation();askRenameItem(p)};
     $('.act-del',c).onclick=e=>{e.stopPropagation();askDelete(p)};
   });
 }
-function cardHTML(p){
+const ICO_PEN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
+const ICO_GRIP2='<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
+function cardHTML(p,idx,total){
   const info=p.path?p.path:p.folder;
-  return `<div class="card" data-id="${p.id}"><div class="thumb">${p.thumb?`<img src="${p.thumb}" alt="${esc(p.name)}"/>`:'<div class="ph"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></svg></div>'}${activeFolder==='__all__'?`<span class="badge">${esc(p.folder)}</span>`:''}</div>
+  const ph='<div class="ph"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></svg></div>';
+  const thumb=`<div class="thumb">${p.thumb?`<img src="${p.thumb}" alt="${esc(p.name)}"/>`:ph}${activeFolder==='__all__'?`<span class="badge">${esc(p.folder)}</span>`:''}</div>`;
+  if(reorder){
+    const prev=idx>0?`<button data-d="prev" title="앞으로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg></button>`:'';
+    const next=idx<total-1?`<button data-d="next" title="뒤로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg></button>`:'';
+    return `<div class="card reord" draggable="true" data-id="${p.id}"><span class="ordno">${idx+1}</span>${thumb}
+      <div class="body"><div class="fname" title="${esc(p.name)}">${esc(p.name)}</div><div class="finfo" title="${esc(info)}">${esc(p.folder)}</div>
+      <div class="ordtools">${prev}${next}</div></div></div>`;
+  }
+  return `<div class="card" data-id="${p.id}">${thumb}
     <div class="body"><div class="fname" title="${esc(p.name)}">${highlight(p.name,searchTerm)}</div><div class="finfo" title="${esc(info)}">${p.path?highlight(p.path,searchTerm):esc(p.folder)}</div>
     <div class="actions">
       <button class="act-copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>복사</button>
+      <button class="act-ren" aria-label="이름 수정" title="이름 수정"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
       <button class="act-del" aria-label="삭제" title="삭제"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
     </div></div></div>`;
 }
@@ -528,7 +699,8 @@ function renderNeedPermission(){
 /* ===== 불러온 목록 캐시 (폴더 미연결 시에도 유지) ===== */
 async function saveCache(){
   try{
-    const data={savedAt:Date.now(),items:items.map(m=>({id:m.id,name:m.name,folder:m.folder,
+    const data={savedAt:Date.now(),folderOrder:folderOrder.slice(),
+      items:items.map(m=>({id:m.id,name:m.name,folder:m.folder,
       path:m.path||'',thumb:m.thumb||'',rel:m.rel||'',ts:m.ts}))};
     await idbSet('cache',data);
   }catch(_){}
@@ -538,6 +710,7 @@ async function loadCache(){
     const d=await idbGet('cache');
     if(!d||!d.items||!d.items.length)return false;
     items=d.items.map(m=>({...m,file:null}));
+    if(Array.isArray(d.folderOrder))folderOrder=d.folderOrder.slice();
     return true;
   }catch(_){return false}
 }
@@ -611,6 +784,104 @@ async function askDelete(p){
   }catch(e){toast('삭제 실패: '+(e.message||e),false)}
 }
 
+/* ===== 이름 수정 (폴더/이미지) ===== */
+const BAD_NAME=/[\\\/:*?"<>|]/;
+function extOf(n){const m=(n||'').match(/\.[^.\/\\]+$/);return m?m[0]:''}
+/* 같은 폴더 안에서 겹치지 않는 파일명 만들기 */
+async function uniqueFileName(dir,name,skipName){
+  const base=name.replace(/(\.[^.]+)$/,''), ext=extOf(name);
+  let out=name,n=1;
+  while(true){
+    if(skipName&&out.toLowerCase()===skipName.toLowerCase())return out;
+    try{ await dir.getFileHandle(out); out=base+'('+(n++)+')'+ext; }
+    catch(_){ return out; }
+  }
+}
+async function dirOfRel(rel){
+  let dir=dirHandle;const parts=rel.split('/');
+  for(let i=0;i<parts.length-1;i++)dir=await dir.getDirectoryHandle(parts[i]);
+  return {dir,name:parts[parts.length-1],prefix:parts.slice(0,-1).join('/')};
+}
+/* 파일 이동/이름변경 (복사 후 원본 삭제) */
+async function moveFile(srcDir,srcName,dstDir,wantName){
+  const f=await (await srcDir.getFileHandle(srcName)).getFile();
+  const same=(srcDir===dstDir);
+  const fin=await uniqueFileName(dstDir,wantName,same?srcName:null);
+  /* 같은 폴더에서 이름이 같으면(대소문자만 다른 경우 포함) 파일은 건드리지 않음 */
+  if(same&&fin.toLowerCase()===srcName.toLowerCase())return srcName;
+  const wh=await dstDir.getFileHandle(fin,{create:true});
+  const w=await wh.createWritable();await w.write(f);await w.close();
+  await srcDir.removeEntry(srcName);
+  return fin;
+}
+
+/* --- 이미지 이름 수정 --- */
+async function askRenameItem(p){
+  const cur=p.name;
+  let v=prompt('이미지 파일 이름을 바꿉니다.\n(확장자를 빼고 입력하면 원래 확장자가 유지됩니다)',cur);
+  if(v==null)return;
+  v=v.trim();
+  if(!v||v===cur)return;
+  if(BAD_NAME.test(v)){toast('이름에 \\ / : * ? " < > | 는 쓸 수 없어요',false);return}
+  if(!extOf(v))v=v+extOf(cur);
+  try{
+    lb(true,30);
+    if(mode==='fsa'&&dirHandle&&p.rel){
+      const {dir,name,prefix}=await dirOfRel(p.rel);
+      const fin=await moveFile(dir,name,dir,v);
+      p.rel=(prefix?prefix+'/':'')+fin;
+      p.name=fin;
+    }else{
+      p.name=v;
+    }
+    p.file=null;
+    await saveLibrary();await saveCache();
+    lb(false);render();toast('이미지 이름을 바꿨어요');
+  }catch(e){lb(false);toast('이름 변경 실패: '+(e.message||e),false)}
+}
+
+/* --- 폴더 이름 수정 --- */
+async function askRenameFolder(oldF){
+  if(!oldF||oldF==='__all__')return;
+  let v=prompt('폴더 이름을 바꿉니다.\n저장 폴더 안의 실제 하위 폴더 이름도 함께 바뀝니다.',oldF);
+  if(v==null)return;
+  v=v.trim();
+  if(!v||v===oldF)return;
+  if(BAD_NAME.test(v)){toast('폴더 이름에 \\ / : * ? " < > | 는 쓸 수 없어요',false);return}
+  const exists=folderNames().indexOf(v)>=0;
+  if(exists&&!confirm(`"${v}" 폴더가 이미 있습니다.\n두 폴더를 합칠까요?`))return;
+  const list=items.filter(x=>x.folder===oldF);
+  try{
+    lb(true,10);
+    if(mode==='fsa'&&dirHandle){
+      const target=(v==='미분류')?dirHandle:await dirHandle.getDirectoryHandle(v,{create:true});
+      for(let i=0;i<list.length;i++){
+        const it=list[i];
+        if(it.rel){
+          try{
+            const {dir,name}=await dirOfRel(it.rel);
+            const fin=await moveFile(dir,name,target,it.name);
+            it.rel=(v==='미분류'?'':v+'/')+fin;
+            it.name=fin;
+          }catch(_){}
+        }
+        it.folder=v;it.file=null;
+        $('#loadbar').style.width=(10+80*(i+1)/Math.max(1,list.length))+'%';
+      }
+      if(oldF!=='미분류'){try{await dirHandle.removeEntry(oldF,{recursive:false})}catch(_){}}
+    }else{
+      list.forEach(it=>it.folder=v);
+    }
+    const oi=folderOrder.indexOf(oldF);
+    if(oi>=0){ if(folderOrder.indexOf(v)>=0)folderOrder.splice(oi,1); else folderOrder[oi]=v; }
+    if(activeFolder===oldF)activeFolder=v;
+    syncFolderOrder();
+    await saveLibrary();await saveCache();
+    lb(false);render();updateStatus();
+    toast(exists?`"${v}" 폴더로 합쳤어요`:'폴더 이름을 바꿨어요');
+  }catch(e){lb(false);toast('폴더 이름 변경 실패: '+(e.message||e),false)}
+}
+
 /* ===== 라이트박스 ===== */
 let lbCurrent=null,lbUrl=null;
 async function openLightbox(p){
@@ -641,8 +912,8 @@ async function exportLibrary(includeFull){
   if(!items.length){toast('내보낼 이미지가 없어요',false);return;}
   if(includeFull && !confirm(`원본 화질까지 포함해 내보냅니다.\n이미지 ${items.length}장 · 파일이 커질 수 있어요.\n계속할까요?`))return;
   lb(true,10);
-  const out={format:'arte-cs-archive',version:1,kind:includeFull?'full':'light',
-    exportedAt:new Date().toISOString(),count:items.length,items:[]};
+  const out={format:'arte-cs-archive',version:2,kind:includeFull?'full':'light',
+    exportedAt:new Date().toISOString(),count:items.length,folderOrder:syncFolderOrder().slice(),items:[]};
   for(let i=0;i<items.length;i++){
     const m=items[i];
     const rec={id:m.id,name:m.name,folder:m.folder,path:m.path||'',thumb:m.thumb||'',rel:m.rel||'',ts:m.ts};
@@ -677,7 +948,8 @@ $('#importInput').onchange=async e=>{
     merge=confirm(`${kind} 목록 ${list.length}장을 불러옵니다.\n\n[확인] 기존 목록에 추가 (병합)\n[취소] 기존 목록을 지우고 교체`);
   }
   lb(true,15);
-  if(!merge)items=[];
+  if(!merge){items=[];folderOrder=Array.isArray(data.folderOrder)?data.folderOrder.slice():[];}
+  else if(Array.isArray(data.folderOrder))data.folderOrder.forEach(n=>{if(folderOrder.indexOf(n)<0)folderOrder.push(n)});
   const existing=new Set(items.map(x=>x.id));
   let added=0;
   for(let i=0;i<list.length;i++){
@@ -703,7 +975,7 @@ function dataURLtoBlob(d,name){
 }
 
 /* ===== 검색 ===== */
-$('#search').addEventListener('input',e=>{searchTerm=e.target.value.trim();$('#searchClear').classList.toggle('show',!!searchTerm);if(items.length)render()});
+$('#search').addEventListener('input',e=>{searchTerm=e.target.value.trim();$('#searchClear').classList.toggle('show',!!searchTerm);if(searchTerm&&reorder){reorder=false;persistOrder()}if(items.length)render()});
 $('#searchClear').onclick=()=>{$('#search').value='';searchTerm='';$('#searchClear').classList.remove('show');render();$('#search').focus()};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#lightbox').classList.contains('show'))$('#lbClose').onclick();$$('.overlay.show').forEach(o=>o.classList.remove('show'))}if(e.key==='/'&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){e.preventDefault();$('#search').focus()}});
 $$('[data-close]').forEach(b=>b.onclick=()=>$('#'+b.dataset.close).classList.remove('show'));
