@@ -769,18 +769,30 @@ function copyViaExec(url){return new Promise(res=>{const img=new Image();img.onl
 async function copyPath(p){if(!p.path){toast('저장된 경로가 없어요',false);return}try{await navigator.clipboard.writeText(p.path);toast('원본 경로를 복사했어요')}catch(e){const ta=document.createElement('textarea');ta.value=p.path;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('원본 경로를 복사했어요')}catch(_){toast('경로 복사 실패',false)}ta.remove()}}
 
 /* ===== 삭제 ===== */
+function isMissingErr(e){
+  const n=(e&&e.name)||'', m=(e&&e.message)||'';
+  return n==='NotFoundError'||/could not be found|not be found|NotFound/i.test(m);
+}
 async function askDelete(p){
   if(!confirm(`"${p.name}" 이미지를 삭제할까요?\n저장 폴더에서도 파일이 삭제됩니다.`))return;
+  let missing=false;
   try{
     if(mode==='fsa'&&dirHandle&&p.rel){
       const parts=p.rel.split('/');
       let dir=dirHandle;
-      for(let i=0;i<parts.length-1;i++)dir=await dir.getDirectoryHandle(parts[i]);
-      await dir.removeEntry(parts[parts.length-1]);
+      try{
+        for(let i=0;i<parts.length-1;i++)dir=await dir.getDirectoryHandle(parts[i]);
+        await dir.removeEntry(parts[parts.length-1]);
+      }catch(e){
+        if(!isMissingErr(e))throw e;
+        missing=true;   // 저장 폴더에 파일이 이미 없음 → 목록에서만 정리
+      }
     }
     items=items.filter(x=>x.id!==p.id);
     await saveLibrary();
-    render();updateStatus();toast('삭제했어요');
+    await saveCache();
+    render();updateStatus();
+    toast(missing?'저장 폴더에 파일이 없어 목록에서만 지웠어요':'삭제했어요');
   }catch(e){toast('삭제 실패: '+(e.message||e),false)}
 }
 
@@ -837,7 +849,7 @@ async function askRenameItem(p){
     p.file=null;
     await saveLibrary();await saveCache();
     lb(false);render();toast('이미지 이름을 바꿨어요');
-  }catch(e){lb(false);toast('이름 변경 실패: '+(e.message||e),false)}
+  }catch(e){lb(false);toast(isMissingErr(e)?'저장 폴더에 원본 파일이 없어 이름을 바꿀 수 없어요 (파일이 옮겨졌거나 삭제된 항목)':'이름 변경 실패: '+(e.message||e),false)}
 }
 
 /* --- 폴더 이름 수정 --- */
