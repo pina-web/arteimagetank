@@ -189,8 +189,29 @@
   .lb-top button{height:38px;padding:0 14px;border-radius:9px;background:rgba(255,255,255,.12);color:#fff;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:7px}
   .lb-top button:hover{background:rgba(255,255,255,.22)}
   .lb-top button svg{width:15px;height:15px}
-  .lb-body{flex:1;display:grid;place-items:center;padding:0 22px 22px;overflow:hidden}
-  .lb-body img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px}
+  .lb-body{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;padding:0 22px 22px;overflow:hidden}
+  .lb-body img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;border-radius:8px;cursor:zoom-in}
+  .lb-body.zoom{display:block;overflow:auto;text-align:center}
+  .lb-body.zoom img{max-width:none;max-height:none;width:auto;height:auto;cursor:zoom-out;border-radius:0}
+  .lb-hint{color:#bdbab0;font-size:11.5px;text-align:center;padding:0 0 12px}
+
+  /* ===== 선택 모드 ===== */
+  .card.selc{cursor:pointer;user-select:none}
+  .card.selc .thumb{pointer-events:none}
+  .card.selc.on{outline:3px solid var(--accent);outline-offset:2px}
+  .card .chk{position:absolute;top:9px;left:9px;z-index:3;width:24px;height:24px;border-radius:7px;background:rgba(255,255,255,.92);border:1.5px solid var(--line-strong);display:grid;place-items:center;color:#fff}
+  .card.selc.on .chk{background:var(--accent);border-color:var(--accent)}
+  .card .chk svg{width:14px;height:14px}
+  .selbar{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:70;display:none;align-items:center;gap:14px;background:var(--ink);color:#fff;border-radius:14px;padding:11px 16px;box-shadow:0 14px 40px rgba(40,38,32,.35);font-size:13px;font-weight:600;max-width:calc(100vw - 24px);flex-wrap:wrap;justify-content:center}
+  .selbar.show{display:flex}
+  .selbar button{height:34px;padding:0 13px;border-radius:9px;background:rgba(255,255,255,.14);color:#fff;font-size:12.5px;font-weight:600}
+  .selbar button:hover{background:rgba(255,255,255,.26)}
+  .selbar button.prim{background:var(--accent)}
+  .selbar button.prim:hover{background:var(--accent-ink)}
+  .fpick{display:flex;flex-wrap:wrap;gap:8px;max-height:210px;overflow:auto;padding:2px}
+  .fpick button{padding:8px 13px;border-radius:9px;border:1px solid var(--line-strong);background:var(--surface);font-size:13px;color:var(--ink)}
+  .fpick button:hover{border-color:var(--accent)}
+  .fpick button.on{background:var(--accent);border-color:var(--accent);color:#fff}
 
   .menu{position:relative}
   .menu-pop{position:absolute;right:0;top:46px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:6px;min-width:210px;display:none;z-index:40}
@@ -292,7 +313,28 @@
       <button id="lbClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>닫기</button>
     </div>
   </div>
-  <div class="lb-body"><img id="lbImg" src="" alt=""/></div>
+  <div class="lb-body" id="lbBody"><img id="lbImg" src="" alt=""/></div>
+  <div class="lb-hint">사진을 클릭하면 원래 크기로 확대 · 한 번 더 클릭하면 전체 보기</div>
+</div>
+
+<div class="selbar" id="selbar">
+  <span id="selCount">0장 선택</span>
+  <button id="selAll">전체 선택</button>
+  <button id="selNone">선택 해제</button>
+  <button class="prim" id="selMove">폴더 이동</button>
+  <button id="selCancel">선택 종료</button>
+</div>
+
+<div class="overlay" id="moveOverlay">
+  <div class="modal" style="max-width:470px">
+    <div class="modal-h"><h3>폴더 이동</h3><button class="x" data-close="moveOverlay"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <div class="modal-b">
+      <div class="note" id="moveNote"></div>
+      <div class="field"><label>이동할 폴더 선택</label><div class="fpick" id="movePick"></div></div>
+      <div class="field"><label>또는 새 폴더 만들기</label><input id="moveNew" type="text" placeholder="새 폴더 이름 (입력하면 이 이름으로 이동)"/></div>
+    </div>
+    <div class="modal-f"><button class="btn ghost" data-close="moveOverlay">취소</button><button class="btn primary" id="moveGo">이동</button></div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -317,6 +359,8 @@ let activeFolder='__all__';
 let searchTerm='', density='cozy';
 let folderOrder=[];    // 사용자가 정한 폴더 표시 순서
 let reorder=false;     // 순서 편집 모드
+let selectMode=false;  // 선택 모드
+let sel=new Set();     // 선택된 이미지 id
 let mode = (HAS_FSA && SECURE) ? 'fsa' : 'file'; // fsa: 폴더직접저장 / file: 파일내보내기 폴백
 const IMG_RE=/\.(jpe?g|jpe|jfif|png|gif|webp|bmp|dib|avif|svg|heic|heif|tiff?|ico)$/i;
 function isImage(f){const n=(f.name||'').trim();return IMG_RE.test(n)||(f.type&&f.type.toLowerCase().startsWith('image/'))}
@@ -498,6 +542,7 @@ function persistOrder(msg){
 }
 function toggleReorder(on){
   reorder=(on===undefined)?!reorder:!!on;
+  if(reorder){selectMode=false;sel.clear()}
   if(reorder&&searchTerm){$('#search').value='';searchTerm='';$('#searchClear').classList.remove('show')}
   render();
   if(!reorder)persistOrder('순서를 저장했어요');
@@ -610,11 +655,14 @@ function render(){
     <div class="toolbar"><div class="seg"><button id="segCozy" class="${density==='cozy'?'on':''}">큰 보기</button><button id="segDense" class="${density==='dense'?'on':''}">조밀 보기</button></div>
       ${searchTerm?'':`<button class="btn ghost" id="ordBtn" style="height:34px;padding:0 13px;font-size:12.5px">${ICO_GRIP2}${reorder?'순서 편집 완료':'순서 변경'}</button>`}
       ${(!searchTerm&&activeFolder!=='__all__')?`<button class="btn ghost" id="renFolderBtn" style="height:34px;padding:0 13px;font-size:12.5px">${ICO_PEN}폴더 이름 수정</button>`:''}
+      ${reorder?'':`<button class="btn ghost" id="selBtn" style="height:34px;padding:0 13px;font-size:12.5px">${ICO_CHK}${selectMode?'선택 종료':'선택'}</button>`}
     </div>
     <div class="grid g-${density}" id="grid"></div>`;
   $('#segCozy').onclick=()=>{density='cozy';render()};$('#segDense').onclick=()=>{density='dense';render()};
   const ob=$('#ordBtn');if(ob)ob.onclick=()=>toggleReorder();
   const rf=$('#renFolderBtn');if(rf)rf.onclick=()=>askRenameFolder(activeFolder);
+  const sb=$('#selBtn');if(sb)sb.onclick=()=>toggleSelect();
+  updateSelbar();
   if(reorder){
     $('#ordDone').onclick=()=>toggleReorder(false);
     $('#ordSortName').onclick=()=>sortItemsInView((a,b)=>(a.name||'').localeCompare(b.name||'','ko',{numeric:true}),'이름순으로 정렬했어요');
@@ -626,6 +674,10 @@ function render(){
   grid.innerHTML=list.map((p,i)=>cardHTML(p,i,list.length)).join('');
   $$('.card',grid).forEach(c=>{
     const p=items.find(x=>x.id===c.dataset.id);
+    if(selectMode){
+      c.onclick=()=>{if(sel.has(p.id))sel.delete(p.id);else sel.add(p.id);c.classList.toggle('on',sel.has(p.id));$('.chk',c).innerHTML=sel.has(p.id)?ICO_CHK:'';updateSelbar()};
+      return;
+    }
     if(reorder){
       c.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain','I:'+p.id);e.dataTransfer.effectAllowed='move';c.classList.add('dragging')});
       c.addEventListener('dragend',()=>{c.classList.remove('dragging');$$('.card',grid).forEach(x=>x.classList.remove('dropline'))});
@@ -641,12 +693,18 @@ function render(){
     $('.act-del',c).onclick=e=>{e.stopPropagation();askDelete(p)};
   });
 }
+const ICO_CHK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>';
 const ICO_PEN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
 const ICO_GRIP2='<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
 function cardHTML(p,idx,total){
   const info=p.path?p.path:p.folder;
   const ph='<div class="ph"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></svg></div>';
   const thumb=`<div class="thumb">${p.thumb?`<img src="${p.thumb}" alt="${esc(p.name)}"/>`:ph}${activeFolder==='__all__'?`<span class="badge">${esc(p.folder)}</span>`:''}</div>`;
+  if(selectMode){
+    const on=sel.has(p.id);
+    return `<div class="card selc ${on?'on':''}" data-id="${p.id}"><span class="chk">${on?ICO_CHK:''}</span>${thumb}
+      <div class="body"><div class="fname" title="${esc(p.name)}">${esc(p.name)}</div><div class="finfo">${esc(p.folder)}</div></div></div>`;
+  }
   if(reorder){
     const prev=idx>0?`<button data-d="prev" title="앞으로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg></button>`:'';
     const next=idx<total-1?`<button data-d="next" title="뒤로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg></button>`:'';
@@ -894,19 +952,109 @@ async function askRenameFolder(oldF){
   }catch(e){lb(false);toast('폴더 이름 변경 실패: '+(e.message||e),false)}
 }
 
+/* ===== 선택 모드 · 폴더 이동 ===== */
+function toggleSelect(on){
+  selectMode=(on===undefined)?!selectMode:!!on;
+  if(selectMode)reorder=false; else sel.clear();
+  render();
+}
+function updateSelbar(){
+  const bar=$('#selbar');if(!bar)return;
+  bar.classList.toggle('show',selectMode);
+  $('#selCount').textContent=sel.size?`${sel.size}장 선택됨`:'옮길 사진을 선택하세요';
+  $('#selMove').disabled=!sel.size;
+  $('#selMove').style.opacity=sel.size?'1':'.45';
+}
+function openMoveModal(){
+  if(!sel.size){toast('먼저 사진을 선택하세요',false);return}
+  let pick=null;
+  const names=syncFolderOrder().slice();
+  if(names.indexOf('미분류')<0)names.push('미분류');
+  $('#moveNote').innerHTML=`선택한 <b>${sel.size}장</b>을 다른 폴더로 옮깁니다. 저장 폴더 안의 실제 파일도 함께 이동합니다.`;
+  $('#movePick').innerHTML=names.map(n=>`<button data-n="${esc(n)}">${esc(n)}</button>`).join('');
+  $$('#movePick button').forEach(b=>b.onclick=()=>{pick=b.dataset.n;$$('#movePick button').forEach(x=>x.classList.toggle('on',x===b));$('#moveNew').value=''});
+  $('#moveNew').value='';
+  $('#moveNew').oninput=()=>{if($('#moveNew').value.trim()){pick=null;$$('#movePick button').forEach(x=>x.classList.remove('on'))}};
+  $('#moveGo').onclick=()=>{
+    const nv=$('#moveNew').value.trim();
+    const target=nv||pick;
+    if(!target){toast('이동할 폴더를 고르거나 새 폴더 이름을 입력하세요',false);return}
+    if(BAD_NAME.test(target)){toast('폴더 이름에 \\ / : * ? " < > | 는 쓸 수 없어요',false);return}
+    $('#moveOverlay').classList.remove('show');
+    moveSelectedTo(target);
+  };
+  $('#moveOverlay').classList.add('show');
+}
+async function moveSelectedTo(folder){
+  const list=items.filter(x=>sel.has(x.id));
+  if(!list.length)return;
+  const from=[...new Set(list.map(x=>x.folder))];
+  let moved=0,failed=0;
+  try{
+    lb(true,10);
+    if(mode==='fsa'&&dirHandle){
+      const target=(folder==='미분류')?dirHandle:await dirHandle.getDirectoryHandle(folder,{create:true});
+      for(let i=0;i<list.length;i++){
+        const it=list[i];
+        if(it.folder!==folder&&it.rel){
+          try{
+            const {dir,name}=await dirOfRel(it.rel);
+            const fin=await moveFile(dir,name,target,it.name);
+            it.rel=(folder==='미분류'?'':folder+'/')+fin;
+            it.name=fin;it.folder=folder;it.file=null;moved++;
+          }catch(e){failed++}
+        }else if(it.folder!==folder){ it.folder=folder;moved++; }
+        $('#loadbar').style.width=(10+80*(i+1)/list.length)+'%';
+      }
+      /* 비게 된 원래 폴더 정리 */
+      for(const f of from){
+        if(f===folder||f==='미분류')continue;
+        if(items.some(x=>x.folder===f))continue;
+        try{await dirHandle.removeEntry(f,{recursive:false})}catch(_){}
+      }
+    }else{
+      list.forEach(it=>{if(it.folder!==folder){it.folder=folder;moved++}});
+    }
+    sel.clear();syncFolderOrder();
+    await saveLibrary();await saveCache();
+    lb(false);render();updateStatus();
+    toast(failed?`${moved}장 이동 · ${failed}장 실패(원본 파일 없음)`:`${moved}장을 "${folder}" 폴더로 옮겼어요`,!failed);
+  }catch(e){lb(false);toast('이동 실패: '+(e.message||e),false)}
+}
+$('#selAll').onclick=()=>{currentList().forEach(p=>sel.add(p.id));render()};
+$('#selNone').onclick=()=>{sel.clear();render()};
+$('#selCancel').onclick=()=>toggleSelect(false);
+$('#selMove').onclick=openMoveModal;
+
 /* ===== 라이트박스 ===== */
-let lbCurrent=null,lbUrl=null;
+let lbCurrent=null,lbUrl=null,lbHist=false;
 async function openLightbox(p){
   lbCurrent=p;$('#lbTitle').firstChild.textContent=p.name;$('#lbSub').textContent=p.path||p.folder;
   if(lbUrl){URL.revokeObjectURL(lbUrl);lbUrl=null}
+  $('#lbBody').classList.remove('zoom');           // 항상 전체가 보이는 크기로 시작
   const f=await readImageFile(p);
   if(f){lbUrl=URL.createObjectURL(f);$('#lbImg').src=lbUrl}else $('#lbImg').src=p.thumb||'';
   $('#lightbox').classList.add('show');
+  /* 뒤로 가기를 누르면 사이트를 벗어나지 않고 이 창만 닫히도록 */
+  if(!lbHist){try{history.pushState({lbOpen:1},'',location.href);lbHist=true}catch(_){}}
 }
-$('#lbClose').onclick=()=>{$('#lightbox').classList.remove('show');if(lbUrl){URL.revokeObjectURL(lbUrl);lbUrl=null}};
+function closeLightbox(fromBack){
+  if(!$('#lightbox').classList.contains('show'))return;
+  $('#lightbox').classList.remove('show');
+  $('#lbBody').classList.remove('zoom');
+  if(lbUrl){URL.revokeObjectURL(lbUrl);lbUrl=null}
+  const had=lbHist;lbHist=false;
+  if(had&&!fromBack){try{history.back()}catch(_){}}
+}
+window.addEventListener('popstate',()=>{
+  if($('#lightbox').classList.contains('show')){closeLightbox(true);return}
+  lbHist=false;
+});
+$('#lbImg').onclick=()=>$('#lbBody').classList.toggle('zoom');
+$('#lbClose').onclick=()=>closeLightbox();
 $('#lbCopy').onclick=()=>lbCurrent&&copyImage(lbCurrent);
 $('#lbPath').onclick=()=>lbCurrent&&copyPath(lbCurrent);
-$('#lightbox').onclick=e=>{if(e.target.id==='lightbox')$('#lbClose').onclick()};
+$('#lightbox').onclick=e=>{if(e.target.id==='lightbox'||e.target.id==='lbBody')closeLightbox()};
 
 /* ===== 메뉴 ===== */
 $('#menuBtn').onclick=e=>{e.stopPropagation();$('#menuPop').classList.toggle('show')};
@@ -989,7 +1137,7 @@ function dataURLtoBlob(d,name){
 /* ===== 검색 ===== */
 $('#search').addEventListener('input',e=>{searchTerm=e.target.value.trim();$('#searchClear').classList.toggle('show',!!searchTerm);if(searchTerm&&reorder){reorder=false;persistOrder()}if(items.length)render()});
 $('#searchClear').onclick=()=>{$('#search').value='';searchTerm='';$('#searchClear').classList.remove('show');render();$('#search').focus()};
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#lightbox').classList.contains('show'))$('#lbClose').onclick();$$('.overlay.show').forEach(o=>o.classList.remove('show'))}if(e.key==='/'&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){e.preventDefault();$('#search').focus()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#lightbox').classList.contains('show')){closeLightbox();return}if(selectMode){toggleSelect(false);return}$$('.overlay.show').forEach(o=>o.classList.remove('show'))}if(e.key==='/'&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){e.preventDefault();$('#search').focus()}});
 $$('[data-close]').forEach(b=>b.onclick=()=>$('#'+b.dataset.close).classList.remove('show'));
 
 /* ===== 시작 ===== */
