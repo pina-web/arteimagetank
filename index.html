@@ -1131,35 +1131,112 @@ async function exportLibrary(includeFull){
 }
 
 /* ===== 목록 불러오기 (가볍게/원본 포함 모두 인식) ===== */
+/* 큰 백업 파일도 통째로 메모리에 올리지 않고 한 장씩 흘려 읽는다 */
+async function readExportStream(file,onHead,onItem){
+  const reader=file.stream().getReader();
+  const dec=new TextDecoder('utf-8');
+  let buf='',head=false,depth=0,inStr=false,escp=false,st=-1,scan=0,n=0;
+  while(true){
+    const r=await reader.read();
+    buf+=r.value?dec.decode(r.value,{stream:true}):(r.done?dec.decode():'');
+    if(!head){
+      const k=buf.indexOf('"items"');
+      const br=k>=0?buf.indexOf('[',k):-1;
+      if(br>=0){
+        let h={};
+        try{h=JSON.parse(buf.slice(0,k).replace(/[,\s]*$/,'')+'}')}catch(_){}
+        await onHead(h);
+        head=true;buf=buf.slice(br+1);scan=0;
+      }
+    }
+    if(head){
+      for(let i=scan;i<buf.length;i++){
+        const c=buf[i];
+        if(inStr){ if(escp)escp=false; else if(c==='\\')escp=true; else if(c==='"')inStr=false; continue; }
+        if(c==='"'){inStr=true;continue}
+        if(c==='{'){ if(depth===0)st=i; depth++; continue }
+        if(c==='}'){
+          depth--;
+          if(depth===0&&st>=0){
+            const txt=buf.slice(st,i+1);
+            buf=buf.slice(i+1);st=-1;i=-1;scan=0;n++;
+            await onItem(txt,n);
+          }
+        }
+      }
+      scan=buf.length;
+    }
+    if(r.done)break;
+  }
+  return n;
+}
+
 $('#importInput').onchange=async e=>{
   const file=e.target.files[0];e.target.value='';if(!file)return;
-  let data;
-  try{data=JSON.parse(await file.text())}catch(_){toast('올바른 목록 파일이 아니에요',false);return}
-  const list=(data&&data.items)||[];
-  if(!list.length){toast('파일에 이미지가 없어요',false);return}
-  const kind=data.kind==='full'?'원본 포함':'가벼운';
-  let merge=true;
-  if(items.length){
-    merge=confirm(`${kind} 목록 ${list.length}장을 불러옵니다.\n\n[확인] 기존 목록에 추가 (병합)\n[취소] 기존 목록을 지우고 교체`);
+  let merge=true,existing=new Set(),total=0,kind='가벼운';
+  let added=0,skipped=0,wrote=0,reused=0,failed=0;
+  lb(true,6);
+  try{
+    const n=await readExportStream(file,
+      h=>{
+        kind=h.kind==='full'?'원본 포함':'가벼운';
+        total=h.count||0;
+        if(items.length){
+          merge=confirm(`${kind} 목록 ${total||''}장을 불러옵니다.\n\n[확인] 기존 목록에 추가 (병합)\n[취소] 기존 목록을 지우고 교체`);
+        }
+        if(!merge){items=[];folderOrder=Array.isArray(h.folderOrder)?h.folderOrder.slice():[]}
+        else if(Array.isArray(h.folderOrder))h.folderOrder.forEach(x=>{if(folderOrder.indexOf(x)<0)folderOrder.push(x)});
+        existing=new Set(items.map(x=>x.id));
+      },
+      async (txt,idx)=>{
+        let m=null;try{m=JSON.parse(txt)}catch(_){failed++;return}
+        if(!m||(!m.name&&!m.rel&&!m.thumb))return;
+        if(m.id&&existing.has(m.id)){skipped++;m=null;return}
+        const it={id:m.id||uid(),name:m.name||'image',folder:m.folder||'미분류',
+          path:m.path||'',thumb:m.thumb||'',rel:m.rel||'',ts:m.ts||Date.now(),file:null};
+        if(m.full){
+          if(mode==='fsa'&&dirHandle){
+            /* 이미 저장 폴더에 있는 파일이면 다시 쓰지 않고 그대로 연결 */
+            let ok=false;
+            if(m.rel){
+              try{const {dir,name}=await dirOfRel(m.rel);await dir.getFileHandle(name);it.rel=m.rel;it.name=name;ok=true;reused++}catch(_){}
+            }
+            if(!ok){
+              try{
+                const blob=dataURLtoBlob(m.full,it.name);
+                const target=it.folder==='미분류'?dirHandle:await dirHandle.getDirectoryHandle(it.folder,{create:true});
+                const fin=await uniqueFileName(target,it.name);
+                const wh=await target.getFileHandle(fin,{create:true});
+                const w=await wh.createWritable();await w.write(blob);await w.close();
+                it.name=fin;it.rel=(it.folder==='미분류'?'':it.folder+'/')+fin;wrote++;
+              }catch(_){failed++}
+            }
+          }else{
+            try{it.file=dataURLtoBlob(m.full,it.name)}catch(_){}
+          }
+        }
+        m=null;
+        items.push(it);if(it.id)existing.add(it.id);added++;
+        $('#loadbar').style.width=(6+88*(total?Math.min(1,idx/total):((idx%50)/50)))+'%';
+        if(idx%5===0)toast(`불러오는 중… ${idx}${total?' / '+total:''}장`);
+        if(idx%20===0)await new Promise(r=>setTimeout(r,0));
+      });
+    if(!n&&!added){lb(false);toast('올바른 목록 파일이 아니에요',false);return}
+    syncFolderOrder();
+    activeFolder='__all__';reorder=false;selectMode=false;sel.clear();
+    try{await saveLibrary()}catch(_){}
+    await saveCache();
+    lb(false);render();updateStatus();
+    const bits=[`${added}장 불러왔어요`];
+    if(wrote)bits.push(`${wrote}장 저장 폴더에 복원`);
+    if(reused)bits.push(`${reused}장은 이미 있어 그대로 연결`);
+    if(skipped)bits.push(`${skipped}장은 이미 목록에 있음`);
+    if(failed)bits.push(`${failed}장 실패`);
+    toast(bits.join(' · '),!failed);
+  }catch(err){
+    lb(false);render();
+    toast('불러오기 실패: '+((err&&err.message)||err),false);
   }
-  lb(true,15);
-  if(!merge){items=[];folderOrder=Array.isArray(data.folderOrder)?data.folderOrder.slice():[];}
-  else if(Array.isArray(data.folderOrder))data.folderOrder.forEach(n=>{if(folderOrder.indexOf(n)<0)folderOrder.push(n)});
-  const existing=new Set(items.map(x=>x.id));
-  let added=0;
-  for(let i=0;i<list.length;i++){
-    const m=list[i];
-    if(existing.has(m.id))continue;
-    const it={id:m.id||uid(),name:m.name||'image',folder:m.folder||'미분류',
-      path:m.path||'',thumb:m.thumb||'',rel:m.rel||'',ts:m.ts||Date.now(),file:null};
-    if(m.full){try{it.file=dataURLtoBlob(m.full,it.name)}catch(_){}}
-    items.push(it);added++;
-    $('#loadbar').style.width=(15+80*(i+1)/list.length)+'%';
-  }
-  lb(false);
-  activeFolder='__all__';render();updateStatus();
-  await saveCache();
-  toast(`${added}장 불러왔어요 · 다음에 열면 자동으로 복원됩니다`);
 };
 function dataURLtoBlob(d,name){
   const [head,body]=d.split(',');
