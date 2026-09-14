@@ -222,6 +222,30 @@
   .menu-pop button svg{width:15px;height:15px;color:var(--muted);flex-shrink:0}
   .menu-pop .sep{height:1px;background:var(--line);margin:5px 2px}
 
+  /* ===== 내부공유용 표시 ===== */
+  .thumb .intchip{position:absolute;top:8px;right:8px;z-index:3;height:24px;padding:0 8px;border-radius:999px;display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;background:rgba(255,255,255,.92);border:1px solid var(--line-strong);color:var(--muted);backdrop-filter:blur(4px);opacity:.62;transition:.14s;max-width:calc(100% - 16px);cursor:pointer}
+  .thumb .intchip svg{width:12px;height:12px;flex-shrink:0}
+  .thumb .intchip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .thumb .intchip:hover{opacity:1;border-color:var(--danger);color:var(--danger)}
+  .thumb .intchip.on{opacity:1;background:var(--danger);border-color:var(--danger);color:#fff}
+  .thumb .intchip.on:hover{background:var(--accent-ink);border-color:var(--accent-ink);color:#fff}
+  .thumb .intmark{position:absolute;bottom:8px;left:8px;z-index:3;background:var(--danger);color:#fff;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:999px;display:inline-flex;align-items:center;gap:5px}
+  .thumb .intmark svg{width:11px;height:11px}
+  .card.isint{border-color:#e8bdb7}
+  .card.isint:hover{border-color:var(--danger)}
+  .selbar button.warn{background:var(--danger)}
+  .selbar button.warn:hover{background:#96392f}
+  .chkrow{display:flex;align-items:flex-start;gap:11px;padding:12px 14px;border:1px solid var(--line-strong);border-radius:10px;background:var(--bg);cursor:pointer;margin-bottom:15px;transition:.14s}
+  .chkrow input{width:18px;height:18px;margin-top:1px;flex-shrink:0;accent-color:#b3493f;cursor:pointer}
+  .chkrow>span{flex:1;min-width:0}
+  .chkrow .t{display:block;font-size:13px;font-weight:600}
+  .chkrow .d{display:block;font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.5}
+  .chkrow.on{border-color:var(--danger);background:var(--danger-soft)}
+  .chkrow.on .t{color:var(--danger)}
+  .lb-top .lbint{display:none;flex-shrink:0;background:var(--danger);color:#fff;font-size:11.5px;font-weight:700;padding:5px 11px;border-radius:999px;align-items:center;gap:5px}
+  .lb-top .lbint svg{width:13px;height:13px}
+  .lb-top .lbint.show{display:inline-flex}
+
   @media(max-width:840px){
     main{grid-template-columns:1fr}
     aside{position:static;max-height:none;display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
@@ -289,6 +313,13 @@
           <input id="fFolder" type="text" placeholder="예: 거실등 / 무몰딩도배 (비우면 미분류)"/>
           <div class="desc">저장 폴더 안에 이 이름의 하위 폴더로 저장됩니다.</div>
         </div>
+        <label class="chkrow" id="chkRow">
+          <input type="checkbox" id="fInternal"/>
+          <span>
+            <span class="t">내부공유용으로 표시</span>
+            <span class="d">고객에게 보내면 안 되는 내부 자료에 체크하세요. 목록에 빨간 <b>내부공유용</b> 표시가 붙고, 지금 올리는 사진 전체에 함께 적용됩니다. (등록 후에도 언제든 바꿀 수 있어요)</span>
+          </span>
+        </label>
         <div class="field">
           <label>원본 경로 (출처 기록용, 선택)</label>
           <textarea id="fPath" placeholder="C:\Users\user\OneDrive\...\디아망벽지샘플28-1.png"></textarea>
@@ -308,6 +339,7 @@
 <div class="lb" id="lightbox">
   <div class="lb-top">
     <div class="ttl" id="lbTitle">—<small id="lbSub"></small></div>
+    <span class="lbint" id="lbInt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>내부공유용</span>
     <div class="tools">
       <button id="lbCopy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>이미지 복사</button>
       <button id="lbPath"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>경로 복사</button>
@@ -323,6 +355,8 @@
   <button id="selAll">전체 선택</button>
   <button id="selNone">선택 해제</button>
   <button class="prim" id="selMove">폴더 이동</button>
+  <button class="warn" id="selIntOn">내부공유용 표시</button>
+  <button id="selIntOff">표시 해제</button>
   <button id="selCancel">선택 종료</button>
 </div>
 
@@ -355,9 +389,10 @@ async function idbGet(k){const db=await idb();return new Promise((res,rej)=>{con
 
 /* ===== 상태 ===== */
 let dirHandle=null;
-let items=[];          // {id,name,folder,path,file,thumb,ts}
+let items=[];          // {id,name,folder,path,file,thumb,ts,internal}
 let activeFolder='__all__';
 let searchTerm='', density='cozy';
+let intFilter='all';   // all | pub(고객용) | int(내부공유용)
 let folderOrder=[];    // 사용자가 정한 폴더 표시 순서
 let reorder=false;     // 순서 편집 모드
 let selectMode=false;  // 선택 모드
@@ -418,7 +453,7 @@ async function loadLibrary(){
   }catch(e){ meta=[]; folderOrder=[]; } // 최초엔 없음
   // 각 항목의 실제 파일을 읽어 File 확보 (썸네일은 메타에 저장돼 즉시 표시)
   for(const m of meta){
-    items.push({id:m.id,name:m.name,folder:m.folder||'미분류',path:m.path||'',thumb:m.thumb||'',rel:m.rel||'',ts:m.ts||Date.now(),file:null});
+    items.push({id:m.id,name:m.name,folder:m.folder||'미분류',path:m.path||'',thumb:m.thumb||'',rel:m.rel||'',ts:m.ts||Date.now(),internal:!!m.internal,file:null});
   }
   lb(false);
   activeFolder='__all__';
@@ -431,7 +466,7 @@ async function saveLibrary(){
   if(mode!=='fsa'||!dirHandle)return;
   const data={format:'arte-cs-archive',version:2,updatedAt:new Date().toISOString(),
     folderOrder:folderOrder.slice(),
-    items:items.map(m=>({id:m.id,name:m.name,folder:m.folder,path:m.path||'',thumb:m.thumb||'',rel:m.rel||'',ts:m.ts}))};
+    items:items.map(m=>({id:m.id,name:m.name,folder:m.folder,path:m.path||'',thumb:m.thumb||'',rel:m.rel||'',ts:m.ts,internal:!!m.internal}))};
   const fh=await dirHandle.getFileHandle(LIB_FILE,{create:true});
   const w=await fh.createWritable();
   await w.write(new Blob([JSON.stringify(data)],{type:'application/json'}));
@@ -475,7 +510,8 @@ async function readImageFile(it){
 /* ===== 등록 ===== */
 let pending=[];
 $('#addBtn').onclick=()=>{ if(!dirHandle && mode==='fsa'){toast('먼저 저장 폴더를 연결하세요',false);pickFolder();return;} openAdd(); };
-function openAdd(){pending=[];$('#fFolder').value=activeFolder==='__all__'?'':activeFolder;$('#fPath').value='';$('#addFields').style.display='none';$('#previewArea').innerHTML='';$('#saveAdd').disabled=true;$('#addOverlay').classList.add('show')}
+function openAdd(){pending=[];$('#fFolder').value=activeFolder==='__all__'?'':activeFolder;$('#fPath').value='';$('#fInternal').checked=(intFilter==='int');$('#chkRow').classList.toggle('on',$('#fInternal').checked);$('#addFields').style.display='none';$('#previewArea').innerHTML='';$('#saveAdd').disabled=true;$('#addOverlay').classList.add('show')}
+$('#fInternal').onchange=()=>$('#chkRow').classList.toggle('on',$('#fInternal').checked);
 const dz=$('#dropzone');
 dz.onclick=()=>$('#fileInput').click();
 $('#fileInput').onchange=e=>{stage([...e.target.files]);e.target.value=''};
@@ -498,11 +534,12 @@ $('#saveAdd').onclick=async()=>{
   if(!pending.length)return;
   const folder=($('#fFolder').value.trim())||'미분류';
   const path=$('#fPath').value.trim();
+  const internal=$('#fInternal').checked;
   $('#saveAdd').disabled=true;lb(true,15);
   let ok=0;
   for(let i=0;i<pending.length;i++){
     const {file,thumb}=pending[i];
-    const it={id:uid(),name:file.name,folder,path:(pending.length===1?path:''),thumb:thumb||'',rel:'',ts:Date.now(),file};
+    const it={id:uid(),name:file.name,folder,path:(pending.length===1?path:''),thumb:thumb||'',rel:'',ts:Date.now(),internal,file};
     try{
       if(mode==='fsa'&&dirHandle){ it.rel=await writeImageFile(folder,file.name,file); }
       items.unshift(it);ok++;
@@ -516,7 +553,7 @@ $('#saveAdd').onclick=async()=>{
   reorder=false;syncFolderOrder();
   try{ await saveCache(); }catch(_){}
   render();updateStatus();
-  toast(`${ok}장 저장 완료 · OneDrive가 자동 동기화합니다`);
+  toast(internal?`${ok}장 저장 완료 · 내부공유용으로 표시했어요`:`${ok}장 저장 완료 · OneDrive가 자동 동기화합니다`);
 };
 
 /* ===== 폴더/목록 ===== */
@@ -631,7 +668,9 @@ function fBtn(id,name,count,type,idx,total){
 }
 function currentList(){
   let list=activeFolder==='__all__'?items:items.filter(p=>p.folder===activeFolder);
-  if(searchTerm){const q=searchTerm.toLowerCase();list=list.filter(p=>(p.name||'').toLowerCase().includes(q)||(p.folder||'').toLowerCase().includes(q)||(p.path||'').toLowerCase().includes(q))}
+  if(intFilter==='int')list=list.filter(p=>p.internal);
+  else if(intFilter==='pub')list=list.filter(p=>!p.internal);
+  if(searchTerm){const q=searchTerm.toLowerCase();list=list.filter(p=>(p.name||'').toLowerCase().includes(q)||(p.folder||'').toLowerCase().includes(q)||(p.path||'').toLowerCase().includes(q)||(p.internal&&'내부공유용'.indexOf(q)>=0))}
   return list.slice();
 }
 function highlight(t,q){t=t||'';if(!q)return esc(t);const i=t.toLowerCase().indexOf(q.toLowerCase());if(i<0)return esc(t);return esc(t.slice(0,i))+'<mark>'+esc(t.slice(i,i+q.length))+'</mark>'+esc(t.slice(i+q.length))}
@@ -641,6 +680,7 @@ function render(){
   if(!items.length){renderEmpty();return;}
   renderFolders();
   const list=currentList();
+  const intCount=list.filter(p=>p.internal).length;
   const ordBar=reorder?`<div class="ordbar">
       <b>순서 편집 중</b> · 왼쪽 <b>폴더</b>와 아래 <b>이미지</b>를 끌어다 놓아 순서를 바꾸세요. 화살표 버튼으로도 옮길 수 있어요. 폴더의 <b>연필 아이콘</b>을 누르면 이름을 바꿉니다.
       <span class="sp">
@@ -651,15 +691,19 @@ function render(){
       </span>
     </div>`:'';
   $('#viewArea').innerHTML=`
-    <div class="content-head"><h2>${activeFolder==='__all__'?'전체 보기':esc(activeFolder)}</h2><span class="meta">${list.length}장${searchTerm?` · "${esc(searchTerm)}" 검색`:''}</span></div>
+    <div class="content-head"><h2>${activeFolder==='__all__'?'전체 보기':esc(activeFolder)}</h2><span class="meta">${list.length}장${intCount?` · 내부공유용 ${intCount}장`:''}${searchTerm?` · "${esc(searchTerm)}" 검색`:''}</span></div>
     ${ordBar}
     <div class="toolbar"><div class="seg"><button id="segCozy" class="${density==='cozy'?'on':''}">큰 보기</button><button id="segDense" class="${density==='dense'?'on':''}">조밀 보기</button></div>
+      <div class="seg"><button id="fltAll" class="${intFilter==='all'?'on':''}">전체</button><button id="fltPub" class="${intFilter==='pub'?'on':''}">고객용</button><button id="fltInt" class="${intFilter==='int'?'on':''}">내부공유용</button></div>
       ${searchTerm?'':`<button class="btn ghost" id="ordBtn" style="height:34px;padding:0 13px;font-size:12.5px">${ICO_GRIP2}${reorder?'순서 편집 완료':'순서 변경'}</button>`}
       ${(!searchTerm&&activeFolder!=='__all__')?`<button class="btn ghost" id="renFolderBtn" style="height:34px;padding:0 13px;font-size:12.5px">${ICO_PEN}폴더 이름 수정</button>`:''}
       ${reorder?'':`<button class="btn ghost" id="selBtn" style="height:34px;padding:0 13px;font-size:12.5px">${ICO_CHK}${selectMode?'선택 종료':'선택'}</button>`}
     </div>
     <div class="grid g-${density}" id="grid"></div>`;
   $('#segCozy').onclick=()=>{density='cozy';render()};$('#segDense').onclick=()=>{density='dense';render()};
+  $('#fltAll').onclick=()=>{intFilter='all';render()};
+  $('#fltPub').onclick=()=>{intFilter='pub';render()};
+  $('#fltInt').onclick=()=>{intFilter='int';render()};
   const ob=$('#ordBtn');if(ob)ob.onclick=()=>toggleReorder();
   const rf=$('#renFolderBtn');if(rf)rf.onclick=()=>askRenameFolder(activeFolder);
   const sb=$('#selBtn');if(sb)sb.onclick=()=>toggleSelect();
@@ -689,31 +733,37 @@ function render(){
       return;
     }
     $('.thumb',c).onclick=()=>openLightbox(p);
+    const ic=$('.intchip',c);if(ic)ic.onclick=e=>{e.stopPropagation();toggleInternal(p)};
     $('.act-copy',c).onclick=e=>{e.stopPropagation();copyImage(p,$('.act-copy',c))};
     $('.act-ren',c).onclick=e=>{e.stopPropagation();askRenameItem(p)};
     $('.act-del',c).onclick=e=>{e.stopPropagation();askDelete(p)};
   });
 }
 const ICO_CHK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>';
+const ICO_LOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
 const ICO_PEN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
 const ICO_GRIP2='<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
 function cardHTML(p,idx,total){
   const info=p.path?p.path:p.folder;
   const ph='<div class="ph"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></svg></div>';
-  const thumb=`<div class="thumb">${p.thumb?`<img src="${p.thumb}" alt="${esc(p.name)}"/>`:ph}${activeFolder==='__all__'?`<span class="badge">${esc(p.folder)}</span>`:''}</div>`;
+  const isint=!!p.internal;
+  const mark=isint?`<span class="intmark">${ICO_LOCK}내부공유용</span>`:'';
+  const chip=`<button class="intchip ${isint?'on':''}" title="${isint?'내부공유용 표시 해제':'내부공유용으로 표시'}" aria-label="내부공유용 표시">${ICO_LOCK}${isint?'<span>내부공유용</span>':''}</button>`;
+  const over=(selectMode||reorder)?mark:chip;
+  const thumb=`<div class="thumb">${p.thumb?`<img src="${p.thumb}" alt="${esc(p.name)}"/>`:ph}${activeFolder==='__all__'?`<span class="badge">${esc(p.folder)}</span>`:''}${over}</div>`;
   if(selectMode){
     const on=sel.has(p.id);
-    return `<div class="card selc ${on?'on':''}" data-id="${p.id}"><span class="chk">${on?ICO_CHK:''}</span>${thumb}
+    return `<div class="card selc ${isint?'isint':''} ${on?'on':''}" data-id="${p.id}"><span class="chk">${on?ICO_CHK:''}</span>${thumb}
       <div class="body"><div class="fname" title="${esc(p.name)}">${esc(p.name)}</div><div class="finfo">${esc(p.folder)}</div></div></div>`;
   }
   if(reorder){
     const prev=idx>0?`<button data-d="prev" title="앞으로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg></button>`:'';
     const next=idx<total-1?`<button data-d="next" title="뒤로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg></button>`:'';
-    return `<div class="card reord" draggable="true" data-id="${p.id}"><span class="ordno">${idx+1}</span>${thumb}
+    return `<div class="card reord ${isint?'isint':''}" draggable="true" data-id="${p.id}"><span class="ordno">${idx+1}</span>${thumb}
       <div class="body"><div class="fname" title="${esc(p.name)}">${esc(p.name)}</div><div class="finfo" title="${esc(info)}">${esc(p.folder)}</div>
       <div class="ordtools">${prev}${next}</div></div></div>`;
   }
-  return `<div class="card" data-id="${p.id}">${thumb}
+  return `<div class="card ${isint?'isint':''}" data-id="${p.id}">${thumb}
     <div class="body"><div class="fname" title="${esc(p.name)}">${highlight(p.name,searchTerm)}</div><div class="finfo" title="${esc(info)}">${p.path?highlight(p.path,searchTerm):esc(p.folder)}</div>
     <div class="actions">
       <button class="act-copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>복사</button>
@@ -760,7 +810,7 @@ async function saveCache(){
   try{
     const data={savedAt:Date.now(),folderOrder:folderOrder.slice(),
       items:items.map(m=>({id:m.id,name:m.name,folder:m.folder,
-      path:m.path||'',thumb:m.thumb||'',rel:m.rel||'',ts:m.ts}))};
+      path:m.path||'',thumb:m.thumb||'',rel:m.rel||'',ts:m.ts,internal:!!m.internal}))};
     await idbSet('cache',data);
   }catch(_){}
 }
@@ -768,7 +818,7 @@ async function loadCache(){
   try{
     const d=await idbGet('cache');
     if(!d||!d.items||!d.items.length)return false;
-    items=d.items.map(m=>({...m,file:null}));
+    items=d.items.map(m=>({...m,internal:!!m.internal,file:null}));
     if(Array.isArray(d.folderOrder))folderOrder=d.folderOrder.slice();
     return true;
   }catch(_){return false}
@@ -816,10 +866,10 @@ async function copyImage(p,btn){
     const blob=await getBlobFor(p);
     if(!blob)throw new Error('이미지 데이터 없음');
     let out=blob;if(blob.type!=='image/png')out=await toPng(blob);
-    if(navigator.clipboard&&window.ClipboardItem){await navigator.clipboard.write([new ClipboardItem({'image/png':out})]);done();toast('이미지 복사됨 · 채팅방에 Ctrl+V');return;}
+    if(navigator.clipboard&&window.ClipboardItem){await navigator.clipboard.write([new ClipboardItem({'image/png':out})]);done();toast(p.internal?'내부공유용 이미지입니다 · 고객에게 보내지 않도록 주의하세요':'이미지 복사됨 · 채팅방에 Ctrl+V',!p.internal);return;}
     throw new Error('no-api');
   }catch(e){
-    try{const blob=await getBlobFor(p);const url=URL.createObjectURL(blob);const ok=await copyViaExec(url);URL.revokeObjectURL(url);if(ok){done();toast('이미지 복사됨 · 채팅방에 Ctrl+V');return}}catch(_){}
+    try{const blob=await getBlobFor(p);const url=URL.createObjectURL(blob);const ok=await copyViaExec(url);URL.revokeObjectURL(url);if(ok){done();toast(p.internal?'내부공유용 이미지입니다 · 고객에게 보내지 않도록 주의하세요':'이미지 복사됨 · 채팅방에 Ctrl+V',!p.internal);return}}catch(_){}
     openLightbox(p);toast('자동 복사가 막힌 환경이에요. 크게 열린 이미지를 우클릭→복사 하세요',false);
   }
 }
@@ -953,6 +1003,28 @@ async function askRenameFolder(oldF){
   }catch(e){lb(false);toast('폴더 이름 변경 실패: '+(e.message||e),false)}
 }
 
+/* ===== 내부공유용 표시 ===== */
+async function persistInternal(){
+  try{ await saveLibrary(); }catch(e){ toast('목록 저장 실패: '+(e.message||e),false); }
+  try{ await saveCache(); }catch(_){}
+}
+async function toggleInternal(p){
+  p.internal=!p.internal;
+  await persistInternal();
+  render();
+  toast(p.internal?'내부공유용으로 표시했어요':'내부공유용 표시를 해제했어요');
+}
+async function setInternalForSelected(v){
+  if(!sel.size){toast('먼저 사진을 선택하세요',false);return}
+  const list=items.filter(x=>sel.has(x.id));
+  let n=0;
+  list.forEach(it=>{ if(!!it.internal!==v){ it.internal=v; n++; } });
+  if(!n){toast(v?'이미 모두 내부공유용이에요':'내부공유용으로 표시된 사진이 없어요',false);return}
+  await persistInternal();
+  render();
+  toast(v?`${n}장을 내부공유용으로 표시했어요`:`${n}장의 내부공유용 표시를 해제했어요`);
+}
+
 /* ===== 선택 모드 · 폴더 이동 ===== */
 function toggleSelect(on){
   selectMode=(on===undefined)?!selectMode:!!on;
@@ -962,9 +1034,9 @@ function toggleSelect(on){
 function updateSelbar(){
   const bar=$('#selbar');if(!bar)return;
   bar.classList.toggle('show',selectMode);
-  $('#selCount').textContent=sel.size?`${sel.size}장 선택됨`:'옮길 사진을 선택하세요';
-  $('#selMove').disabled=!sel.size;
-  $('#selMove').style.opacity=sel.size?'1':'.45';
+  const nInt=items.filter(x=>sel.has(x.id)&&x.internal).length;
+  $('#selCount').textContent=sel.size?`${sel.size}장 선택됨${nInt?` (내부공유용 ${nInt}장)`:''}`:'사진을 선택하세요';
+  ['#selMove','#selIntOn','#selIntOff'].forEach(id=>{const b=$(id);if(!b)return;b.disabled=!sel.size;b.style.opacity=sel.size?'1':'.45'});
 }
 function openMoveModal(){
   if(!sel.size){toast('먼저 사진을 선택하세요',false);return}
@@ -1026,11 +1098,14 @@ $('#selAll').onclick=()=>{currentList().forEach(p=>sel.add(p.id));render()};
 $('#selNone').onclick=()=>{sel.clear();render()};
 $('#selCancel').onclick=()=>toggleSelect(false);
 $('#selMove').onclick=openMoveModal;
+$('#selIntOn').onclick=()=>setInternalForSelected(true);
+$('#selIntOff').onclick=()=>setInternalForSelected(false);
 
 /* ===== 라이트박스 ===== */
 let lbCurrent=null,lbUrl=null,lbHist=false;
 async function openLightbox(p){
   lbCurrent=p;$('#lbTitle').firstChild.textContent=p.name;$('#lbSub').textContent=p.path||p.folder;
+  $('#lbInt').classList.toggle('show',!!p.internal);
   if(lbUrl){URL.revokeObjectURL(lbUrl);lbUrl=null}
   $('#lbBody').classList.remove('zoom');           // 항상 전체가 보이는 크기로 시작
   const f=await readImageFile(p);
@@ -1096,7 +1171,7 @@ async function exportLibrary(includeFull){
     await put(JSON.stringify(head).slice(0,-1)+',"items":[');
     for(let i=0;i<items.length;i++){
       const m=items[i];
-      const rec={id:m.id,name:m.name,folder:m.folder,path:m.path||'',thumb:m.thumb||'',rel:m.rel||'',ts:m.ts};
+      const rec={id:m.id,name:m.name,folder:m.folder,path:m.path||'',thumb:m.thumb||'',rel:m.rel||'',ts:m.ts,internal:!!m.internal};
       if(includeFull){
         try{
           const f=await readImageFile(m);
@@ -1193,7 +1268,7 @@ $('#importInput').onchange=async e=>{
         if(!m||(!m.name&&!m.rel&&!m.thumb))return;
         if(m.id&&existing.has(m.id)){skipped++;m=null;return}
         const it={id:m.id||uid(),name:m.name||'image',folder:m.folder||'미분류',
-          path:m.path||'',thumb:m.thumb||'',rel:m.rel||'',ts:m.ts||Date.now(),file:null};
+          path:m.path||'',thumb:m.thumb||'',rel:m.rel||'',ts:m.ts||Date.now(),internal:!!m.internal,file:null};
         if(m.full){
           if(mode==='fsa'&&dirHandle){
             /* 이미 저장 폴더에 있는 파일이면 다시 쓰지 않고 그대로 연결 */
@@ -1223,7 +1298,7 @@ $('#importInput').onchange=async e=>{
       });
     if(!n&&!added){lb(false);toast('올바른 목록 파일이 아니에요',false);return}
     syncFolderOrder();
-    activeFolder='__all__';reorder=false;selectMode=false;sel.clear();
+    activeFolder='__all__';intFilter='all';reorder=false;selectMode=false;sel.clear();
     try{await saveLibrary()}catch(_){}
     await saveCache();
     lb(false);render();updateStatus();
