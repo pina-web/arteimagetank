@@ -457,9 +457,46 @@ window.arteNavSet();
   <button id="selAll">전체 선택</button>
   <button id="selNone">선택 해제</button>
   <button class="prim" id="selMove">폴더 이동</button>
+  <button id="selDown">다운로드</button>
   <button class="warn" id="selIntOn">내부공유용 표시</button>
   <button id="selIntOff">표시 해제</button>
   <button id="selCancel">선택 종료</button>
+</div>
+
+<div class="overlay" id="dlOverlay">
+  <div class="modal" style="max-width:470px">
+    <div class="modal-h"><h3>선택한 사진 다운로드</h3><button class="x" data-close="dlOverlay"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <div class="modal-b">
+      <div class="note" id="dlNote"></div>
+      <div class="field"><label>받을 형식</label>
+        <select id="dlKind">
+          <option value="orig">원본 그대로</option>
+          <option value="webp">WebP로 변환해서</option>
+          <option value="both">원본 + WebP 둘 다</option>
+        </select>
+      </div>
+      <div class="field" id="dlQRow"><label>WebP 화질 <span id="dlQv" style="color:var(--accent);font-weight:700">85</span></label>
+        <input type="range" id="dlQ" min="60" max="95" step="5" value="85">
+      </div>
+      <div class="field"><label>ZIP 나누기</label>
+        <select id="dlSplit">
+          <option value="300">300MB마다 나누기 (권장)</option>
+          <option value="700">700MB마다 나누기</option>
+          <option value="0">나누지 않고 한 개로</option>
+        </select>
+        <small style="color:var(--sub)">용량이 크면 한 개로 받다가 실패할 수 있어 나눠 받는 편이 안전합니다.</small>
+      </div>
+      <div id="dlProg" style="display:none">
+        <div style="height:8px;background:#eee;border-radius:999px;overflow:hidden;margin:10px 0 6px"><div id="dlBar" style="height:100%;width:0;background:var(--accent);transition:width .2s"></div></div>
+        <div id="dlStat" style="font-size:13px;color:var(--sub)"></div>
+      </div>
+    </div>
+    <div class="modal-f">
+      <button class="btn ghost" data-close="dlOverlay" id="dlCancel">닫기</button>
+      <button class="btn ghost" id="dlStop" style="display:none">중단</button>
+      <button class="btn primary" id="dlRun">다운로드</button>
+    </div>
+  </div>
 </div>
 
 <div class="overlay" id="moveOverlay">
@@ -608,6 +645,125 @@ async function readImageFile(it){
     it.file=f;return f;
   }catch(e){return null}
 }
+
+/* ===== 선택 다운로드 (ZIP 직접 생성) ===== */
+const CRC_T=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0}return t})();
+function crc32(buf){let c=0xFFFFFFFF;const b=new Uint8Array(buf);for(let i=0;i<b.length;i++)c=CRC_T[(c^b[i])&0xFF]^(c>>>8);return (c^0xFFFFFFFF)>>>0}
+function dosDT(d){const t=((d.getHours()&31)<<11)|((d.getMinutes()&63)<<5)|((d.getSeconds()/2)&31);
+  const dt=(((d.getFullYear()-1980)&127)<<9)|(((d.getMonth()+1)&15)<<5)|(d.getDate()&31);return [t,dt]}
+function ZipMaker(){
+  const parts=[], dir=[]; let off=0, names=Object.create(null);
+  const enc=new TextEncoder();
+  function uniq(path){
+    if(!names[path]){names[path]=1;return path}
+    const m=path.match(/^(.*?)(\.[^.\/]*)?$/); const base=m[1], ext=m[2]||'';
+    let n=1,q; do{ q=base+'('+(n++)+')'+ext; }while(names[q]); names[q]=1; return q;
+  }
+  return {
+    size(){return off},
+    count(){return dir.length},
+    async add(path,blob){
+      path=uniq(path);
+      const buf=await blob.arrayBuffer();
+      const crc=crc32(buf), sz=buf.byteLength, nm=enc.encode(path);
+      const [t,d]=dosDT(new Date());
+      const h=new DataView(new ArrayBuffer(30+nm.length));
+      h.setUint32(0,0x04034b50,true); h.setUint16(4,20,true); h.setUint16(6,0x0800,true);
+      h.setUint16(8,0,true); h.setUint16(10,t,true); h.setUint16(12,d,true);
+      h.setUint32(14,crc,true); h.setUint32(18,sz,true); h.setUint32(22,sz,true);
+      h.setUint16(26,nm.length,true); h.setUint16(28,0,true);
+      new Uint8Array(h.buffer).set(nm,30);
+      parts.push(h.buffer, buf);
+      dir.push({nm,crc,sz,off,t,d});
+      off+=30+nm.length+sz;
+    },
+    finish(){
+      const cdParts=[]; let cdLen=0;
+      for(const e of dir){
+        const c=new DataView(new ArrayBuffer(46+e.nm.length));
+        c.setUint32(0,0x02014b50,true); c.setUint16(4,20,true); c.setUint16(6,20,true);
+        c.setUint16(8,0x0800,true); c.setUint16(10,0,true); c.setUint16(12,e.t,true); c.setUint16(14,e.d,true);
+        c.setUint32(16,e.crc,true); c.setUint32(20,e.sz,true); c.setUint32(24,e.sz,true);
+        c.setUint16(28,e.nm.length,true); c.setUint16(30,0,true); c.setUint16(32,0,true);
+        c.setUint16(34,0,true); c.setUint16(36,0,true); c.setUint32(38,0,true); c.setUint32(42,e.off,true);
+        new Uint8Array(c.buffer).set(e.nm,46);
+        cdParts.push(c.buffer); cdLen+=46+e.nm.length;
+      }
+      const e=new DataView(new ArrayBuffer(22));
+      e.setUint32(0,0x06054b50,true); e.setUint16(4,0,true); e.setUint16(6,0,true);
+      e.setUint16(8,dir.length,true); e.setUint16(10,dir.length,true);
+      e.setUint32(12,cdLen,true); e.setUint32(16,off,true); e.setUint16(20,0,true);
+      return new Blob(parts.concat(cdParts,[e.buffer]),{type:'application/zip'});
+    }
+  };
+}
+function saveBlob(blob,name){
+  const u=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(u),60000);
+}
+let dlAbort=false, dlBusy=false;
+function openDownload(){
+  if(!sel.size){ toast('먼저 사진을 선택하세요',false); return; }
+  dlAbort=false;
+  $('#dlNote').innerHTML='선택한 <b>'+sel.size+'장</b>을 ZIP으로 받습니다. 폴더 구조가 그대로 들어갑니다.';
+  $('#dlProg').style.display='none'; $('#dlStat').textContent=''; $('#dlBar').style.width='0';
+  $('#dlRun').style.display=''; $('#dlStop').style.display='none'; $('#dlCancel').style.display='';
+  $('#dlQRow').style.display=($('#dlKind').value==='orig')?'none':'';
+  $('#dlOverlay').classList.add('show');
+}
+async function dlRun(){
+  if(dlBusy)return;
+  const kind=$('#dlKind').value, q=(+$('#dlQ').value||85)/100;
+  const limit=(+$('#dlSplit').value||0)*1048576;
+  const list=items.filter(it=>sel.has(it.id));
+  if(!list.length){ toast('선택한 사진이 없습니다',false); return; }
+  dlBusy=true; dlAbort=false;
+  $('#dlRun').style.display='none'; $('#dlStop').style.display=''; $('#dlCancel').style.display='none';
+  $('#dlProg').style.display='';
+  const stamp=new Date().toISOString().slice(0,10).replace(/-/g,'');
+  let zip=ZipMaker(), part=1, saved=0, done=0, fail=0;
+  const flush=()=>{ if(!zip.count())return; const blob=zip.finish();
+    saveBlob(blob,'아르떼_이미지자료실_'+stamp+(part>1||limit?'_'+part:'')+'.zip'); part++; saved++; zip=ZipMaker(); };
+  for(let i=0;i<list.length;i++){
+    if(dlAbort)break;
+    const it=list[i];
+    $('#dlBar').style.width=Math.round(i/list.length*100)+'%';
+    $('#dlStat').textContent=(i+1)+' / '+list.length+' · '+it.name;
+    try{
+      it.file=null;
+      const f=await readImageFile(it);
+      if(!f){ fail++; continue; }
+      const dirp=(it.folder&&it.folder!=='미분류')?it.folder+'/':'';
+      const base=(it.name||'image').replace(/\.[^.]+$/,'');
+      if(kind==='orig'||kind==='both') await zip.add((kind==='both'?'원본/':'')+dirp+it.name,f);
+      if(kind==='webp'||kind==='both'){
+        if(/\.webp$/i.test(it.name)){ if(kind==='webp') await zip.add(dirp+it.name,f); }
+        else{
+          const blob=await wpEncode(f,q);
+          if(blob) await zip.add((kind==='both'?'webp/':'')+dirp+base+'.webp',blob);
+          else fail++;
+        }
+      }
+      it.file=null; done++;
+      if(limit && zip.size()>limit) flush();
+      await new Promise(r=>setTimeout(r,0));
+    }catch(e){ fail++; it.file=null; }
+  }
+  flush();
+  $('#dlBar').style.width='100%';
+  let msg=(dlAbort?'중단했습니다. ':'')+done+'장 담음 · ZIP '+saved+'개 저장';
+  if(fail) msg+=' · 실패 '+fail+'건';
+  $('#dlStat').textContent=msg;
+  toast('다운로드 준비 완료 · ZIP '+saved+'개');
+  dlBusy=false;
+  $('#dlStop').style.display='none'; $('#dlCancel').style.display=''; $('#dlRun').style.display='';
+}
+if($('#selDown')) $('#selDown').onclick=openDownload;
+if($('#dlKind')) $('#dlKind').onchange=()=>{ $('#dlQRow').style.display=($('#dlKind').value==='orig')?'none':''; };
+if($('#dlQ')) $('#dlQ').oninput=()=>{ $('#dlQv').textContent=$('#dlQ').value; };
+if($('#dlRun')) $('#dlRun').onclick=dlRun;
+if($('#dlStop')) $('#dlStop').onclick=()=>{ dlAbort=true; $('#dlStat').textContent='중단하는 중…'; };
 
 /* ===== WebP 변환 ===== */
 const WP_BACKUP='_원본(변환전)';
