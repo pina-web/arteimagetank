@@ -351,6 +351,8 @@ window.arteNavSet();
             <button id="exportLightBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>목록 내보내기 (가볍게)</button>
             <button id="exportFullBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>목록 내보내기 (원본 포함)</button>
             <button id="importBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>목록 불러오기</button>
+            <div class="sep"></div>
+            <button id="webpBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h9"/><path d="m3 16 5-5 4 4"/><circle cx="15.5" cy="8.5" r="1.5"/><path d="M19 21v-6M16 18l3 3 3-3"/></svg>WebP로 용량 줄이기</button>
           </div>
         </div>
       </div>
@@ -398,6 +400,38 @@ window.arteNavSet();
     <div class="modal-f">
       <button class="btn ghost" data-close="addOverlay">취소</button>
       <button class="btn primary" id="saveAdd" disabled>등록</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="webpOverlay">
+  <div class="modal">
+    <div class="modal-h"><h3>WebP로 용량 줄이기</h3><button class="x" data-close="webpOverlay"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <div class="modal-b">
+      <div class="note">저장 폴더의 사진을 <b>WebP로 바꿔 용량을 줄입니다.</b> 보통 PNG는 70~90%, JPG는 20~40% 줄어듭니다. 사진 크기(가로·세로)는 그대로입니다. 변환 중에는 창을 닫거나 다른 화면으로 넘어가지 마세요.</div>
+      <div class="field"><label>바꿀 대상</label>
+        <select id="wpScope">
+          <option value="all">전체 폴더</option>
+          <option value="cur">지금 보고 있는 폴더만</option>
+        </select>
+      </div>
+      <div class="field"><label>화질 <span id="wpQv" style="color:var(--accent);font-weight:700">85</span> <small style="color:var(--sub)">(숫자가 낮을수록 용량이 작아집니다. 글자가 들어간 가격표는 85 이상 권장)</small></label>
+        <input type="range" id="wpQ" min="60" max="95" step="5" value="85">
+      </div>
+      <div class="field"><label>원본 사진 처리</label>
+        <label style="display:flex;gap:8px;align-items:flex-start;margin-bottom:6px"><input type="radio" name="wpOrig" value="backup" checked><span>저장 폴더 안 <b>_원본(변환전)</b> 폴더로 옮기기 <small style="display:block;color:var(--sub)">먼저 확인한 뒤 그 폴더를 직접 지우면 용량이 줄어듭니다. 안전합니다.</small></span></label>
+        <label style="display:flex;gap:8px;align-items:flex-start"><input type="radio" name="wpOrig" value="delete"><span>바로 지우기 <small style="display:block;color:var(--sub)">용량이 즉시 줄지만 되돌릴 수 없습니다.</small></span></label>
+      </div>
+      <div class="note" id="wpInfo" style="background:#fff">대상 사진을 세는 중…</div>
+      <div id="wpProg" style="display:none">
+        <div style="height:8px;background:#eee;border-radius:999px;overflow:hidden;margin:10px 0 6px"><div id="wpBar" style="height:100%;width:0;background:var(--accent);transition:width .2s"></div></div>
+        <div id="wpStat" style="font-size:13px;color:var(--sub)"></div>
+      </div>
+    </div>
+    <div class="modal-f">
+      <button class="btn ghost" data-close="webpOverlay" id="wpCancel">닫기</button>
+      <button class="btn ghost" id="wpStop" style="display:none">중단</button>
+      <button class="btn primary" id="wpRun">변환 시작</button>
     </div>
   </div>
 </div>
@@ -574,6 +608,106 @@ async function readImageFile(it){
     it.file=f;return f;
   }catch(e){return null}
 }
+
+/* ===== WebP 변환 ===== */
+const WP_BACKUP='_원본(변환전)';
+let wpAbort=false, wpBusy=false;
+function wpTargets(){
+  const scope=$('#wpScope')?$('#wpScope').value:'all';
+  return items.filter(it=>{
+    if(!it.rel) return false;
+    if(/\.webp$/i.test(it.rel)) return false;
+    if(scope==='cur' && activeFolder!=='__all__' && it.folder!==activeFolder) return false;
+    return true;
+  });
+}
+function wpSize(n){ return n>=1048576 ? (n/1048576).toFixed(1)+'MB' : Math.max(1,Math.round(n/1024))+'KB'; }
+function wpInfo(){
+  const t=wpTargets();
+  const done=items.filter(it=>/\.webp$/i.test(it.rel||'')).length;
+  $('#wpInfo').innerHTML='바꿀 사진 <b>'+t.length+'장</b>'+(done?' · 이미 WebP인 사진 '+done+'장은 건너뜁니다':'');
+  $('#wpRun').disabled=!t.length;
+}
+function openWebp(){
+  const mp=$('#menuPop'); if(mp){mp.classList.remove('on','show');}
+  if(mode!=='fsa'||!dirHandle){ toast('먼저 저장 폴더를 연결하세요',false); return; }
+  wpAbort=false;
+  $('#wpProg').style.display='none'; $('#wpStat').textContent=''; $('#wpBar').style.width='0';
+  $('#wpRun').style.display=''; $('#wpStop').style.display='none'; $('#wpRun').disabled=false;
+  wpInfo();
+  $('#webpOverlay').classList.add('show');
+}
+async function wpEncode(file,q){
+  let bmp=null;
+  try{ bmp=await createImageBitmap(file); }catch(e){ return null; }
+  const c=document.createElement('canvas'); c.width=bmp.width; c.height=bmp.height;
+  const ctx=c.getContext('2d'); ctx.drawImage(bmp,0,0);
+  if(bmp.close)bmp.close();
+  const blob=await new Promise(r=>{ try{ c.toBlob(r,'image/webp',q); }catch(e){ r(null); } });
+  c.width=c.height=1;
+  return blob;
+}
+async function wpDirOf(parts,create){
+  let dir=dirHandle;
+  for(const seg of parts) dir=await dir.getDirectoryHandle(seg,{create:!!create});
+  return dir;
+}
+async function wpRun(){
+  if(wpBusy) return;
+  const q=(+$('#wpQ').value||85)/100;
+  const keep=(document.querySelector('input[name="wpOrig"]:checked')||{}).value||'backup';
+  const list=wpTargets();
+  if(!list.length){ toast('바꿀 사진이 없습니다',false); return; }
+  wpBusy=true; wpAbort=false;
+  $('#wpRun').style.display='none'; $('#wpStop').style.display=''; $('#wpCancel').style.display='none';
+  $('#wpProg').style.display='';
+  let ok=0,skip=0,fail=0,before=0,after=0;
+  for(let i=0;i<list.length;i++){
+    if(wpAbort) break;
+    const it=list[i];
+    $('#wpBar').style.width=Math.round(i/list.length*100)+'%';
+    $('#wpStat').textContent=(i+1)+' / '+list.length+' · '+it.name+(ok?' · 지금까지 '+wpSize(before-after)+' 줄임':'');
+    try{
+      it.file=null;
+      const f=await readImageFile(it);
+      if(!f){ fail++; continue; }
+      const blob=await wpEncode(f,q);
+      if(!blob || blob.size>=f.size){ skip++; it.file=null; continue; }
+      const base=(it.name||'image').replace(/\.[^.]+$/,'');
+      const newRel=await writeImageFile(it.folder,base+'.webp',blob);
+      const parts=it.rel.split('/'); const fname=parts.pop();
+      const dir=await wpDirOf(parts,false);
+      if(keep==='backup'){
+        const bdir=await wpDirOf([WP_BACKUP].concat(parts),true);
+        const bh=await bdir.getFileHandle(fname,{create:true});
+        const w=await bh.createWritable(); await w.write(f); await w.close();
+      }
+      await dir.removeEntry(fname);
+      before+=f.size; after+=blob.size;
+      it.rel=newRel; it.name=newRel.split('/').pop(); it.file=null;
+      ok++;
+      if(ok%25===0) await saveLibrary();
+    }catch(e){ fail++; it.file=null; }
+  }
+  await saveLibrary();
+  render(); updateStatus();
+  $('#wpBar').style.width='100%';
+  let msg=(wpAbort?'중단했습니다. ':'')+'완료 '+ok+'장';
+  if(ok) msg+=' · '+wpSize(before)+' → '+wpSize(after)+' ('+wpSize(before-after)+' 줄임)';
+  if(skip) msg+=' · 더 작아지지 않아 그대로 둔 '+skip+'장';
+  if(fail) msg+=' · 실패 '+fail+'장';
+  if(ok&&keep==='backup') msg+=' · 원본은 「'+WP_BACKUP+'」 폴더에 있습니다. 확인 후 지우면 용량이 줄어듭니다.';
+  $('#wpStat').textContent=msg;
+  toast('WebP 변환 완료: '+ok+'장');
+  wpBusy=false;
+  $('#wpStop').style.display='none'; $('#wpCancel').style.display=''; $('#wpRun').style.display=''; wpInfo();
+}
+if($('#webpBtn')) $('#webpBtn').onclick=openWebp;
+if($('#wpQ')) $('#wpQ').oninput=()=>{ $('#wpQv').textContent=$('#wpQ').value; };
+if($('#wpScope')) $('#wpScope').onchange=wpInfo;
+if($('#wpRun')) $('#wpRun').onclick=wpRun;
+if($('#wpStop')) $('#wpStop').onclick=()=>{ wpAbort=true; $('#wpStat').textContent='중단하는 중… 지금 사진까지만 끝냅니다'; };
+window.addEventListener('beforeunload',e=>{ if(wpBusy){ e.preventDefault(); e.returnValue=''; } });
 
 /* ===== 등록 ===== */
 let pending=[];
