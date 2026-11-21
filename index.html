@@ -825,20 +825,31 @@ async function wpRun(){
   wpBusy=true; wpAbort=false;
   $('#wpRun').style.display='none'; $('#wpStop').style.display=''; $('#wpCancel').style.display='none';
   $('#wpProg').style.display='';
-  let ok=0,skip=0,fail=0,before=0,after=0;
+  let ok=0,skip=0,fail=0,before=0,after=0; const errs=[];
+  const note=(it,msg)=>{ fail++; if(errs.length<3) errs.push(it.name+' → '+msg); console.warn('[webp]',it.name,msg); };
+  try{
+    const okperm=await ensurePermission(dirHandle,true);
+    if(!okperm){ $('#wpStat').textContent='저장 폴더에 쓸 권한이 없습니다. 「저장 폴더 변경」으로 폴더를 다시 연결해 주세요.';
+      wpBusy=false; $('#wpStop').style.display='none'; $('#wpCancel').style.display=''; $('#wpRun').style.display=''; return; }
+  }catch(e){}
   for(let i=0;i<list.length;i++){
     if(wpAbort) break;
     const it=list[i];
     $('#wpBar').style.width=Math.round(i/list.length*100)+'%';
     $('#wpStat').textContent=(i+1)+' / '+list.length+' · '+it.name+(ok?' · 지금까지 '+wpSize(before-after)+' 줄임':'');
+    let newRel=null;
     try{
       it.file=null;
-      const f=await readImageFile(it);
-      if(!f){ fail++; continue; }
-      const blob=await wpEncode(f,q);
-      if(!blob || blob.size>=f.size){ skip++; it.file=null; continue; }
+      let f=null;
+      try{ f=await readImageFile(it); }catch(e){ note(it,'원본 읽기 오류 ('+(e.name||e)+')'); continue; }
+      if(!f){ note(it,'원본 파일을 찾지 못함 ('+it.rel+')'); continue; }
+      let blob=null;
+      try{ blob=await wpEncode(f,q); }catch(e){ note(it,'변환 오류 ('+(e.name||e)+')'); continue; }
+      if(!blob){ note(it,'이 형식은 변환할 수 없음'); continue; }
+      if(blob.size>=f.size){ skip++; it.file=null; continue; }
       const base=(it.name||'image').replace(/\.[^.]+$/,'');
-      const newRel=await writeImageFile(it.folder,base+'.webp',blob);
+      try{ newRel=await writeImageFile(it.folder,base+'.webp',blob); }
+      catch(e){ note(it,'새 파일 저장 실패 ('+(e.name||e)+')'); continue; }
       const parts=it.rel.split('/'); const fname=parts.pop();
       const dir=await wpDirOf(parts,false);
       if(keep==='backup'){
@@ -848,10 +859,14 @@ async function wpRun(){
       }
       await dir.removeEntry(fname);
       before+=f.size; after+=blob.size;
-      it.rel=newRel; it.name=newRel.split('/').pop(); it.file=null;
+      it.rel=newRel; it.name=newRel.split('/').pop(); it.file=null; newRel=null;
       ok++;
       if(ok%25===0) await saveLibrary();
-    }catch(e){ fail++; it.file=null; }
+    }catch(e){
+      note(it,'원본 정리 실패 ('+(e.name||e)+')');
+      if(newRel){ try{ const np=newRel.split('/'); const nf=np.pop(); const nd=await wpDirOf(np,false); await nd.removeEntry(nf); }catch(_){ } }
+      it.file=null;
+    }
   }
   await saveLibrary();
   render(); updateStatus();
@@ -862,6 +877,12 @@ async function wpRun(){
   if(fail) msg+=' · 실패 '+fail+'장';
   if(ok&&keep==='backup') msg+=' · 원본은 「'+WP_BACKUP+'」 폴더에 있습니다. 확인 후 지우면 용량이 줄어듭니다.';
   $('#wpStat').textContent=msg;
+  if(errs.length){
+    const d=document.createElement('div');
+    d.style.cssText='margin-top:8px;font-size:12.5px;color:#b0493a;white-space:pre-line;word-break:break-all';
+    d.textContent='실패 내용\n· '+errs.join('\n· ');
+    $('#wpStat').appendChild(d);
+  }
   toast('WebP 변환 완료: '+ok+'장');
   wpBusy=false;
   $('#wpStop').style.display='none'; $('#wpCancel').style.display=''; $('#wpRun').style.display=''; wpInfo();
