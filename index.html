@@ -411,6 +411,7 @@ window.arteNavSet();
       <div class="note">저장 폴더의 사진을 <b>WebP로 바꿔 용량을 줄입니다.</b> 보통 PNG는 70~90%, JPG는 20~40% 줄어듭니다. 사진 크기(가로·세로)는 그대로입니다. 변환 중에는 창을 닫거나 다른 화면으로 넘어가지 마세요.</div>
       <div class="field"><label>바꿀 대상</label>
         <select id="wpScope">
+          <option value="sel">선택한 사진만</option>
           <option value="all">전체 폴더</option>
           <option value="cur">지금 보고 있는 폴더만</option>
         </select>
@@ -458,6 +459,7 @@ window.arteNavSet();
   <button id="selNone">선택 해제</button>
   <button class="prim" id="selMove">폴더 이동</button>
   <button id="selDown">다운로드</button>
+  <button id="selWebp">WebP로 바꾸기</button>
   <button class="warn" id="selIntOn">내부공유용 표시</button>
   <button id="selIntOff">표시 해제</button>
   <button id="selCancel">선택 종료</button>
@@ -773,6 +775,7 @@ function wpTargets(){
   return items.filter(it=>{
     if(!it.rel) return false;
     if(/\.webp$/i.test(it.rel)) return false;
+    if(scope==='sel' && !sel.has(it.id)) return false;
     if(scope==='cur' && activeFolder!=='__all__' && it.folder!==activeFolder) return false;
     return true;
   });
@@ -781,12 +784,17 @@ function wpSize(n){ return n>=1048576 ? (n/1048576).toFixed(1)+'MB' : Math.max(1
 function wpInfo(){
   const t=wpTargets();
   const done=items.filter(it=>/\.webp$/i.test(it.rel||'')).length;
-  $('#wpInfo').innerHTML='바꿀 사진 <b>'+t.length+'장</b>'+(done?' · 이미 WebP인 사진 '+done+'장은 건너뜁니다':'');
+  const scope=$('#wpScope').value;
+  const skipped=(scope==='sel'?items.filter(it=>sel.has(it.id)&&/\.webp$/i.test(it.rel||'')).length:done);
+  $('#wpInfo').innerHTML='바꿀 사진 <b>'+t.length+'장</b>'+(scope==='sel'?' (선택한 '+sel.size+'장 중)':'')+(skipped?' · 이미 WebP인 사진 '+skipped+'장은 건너뜁니다':'');
   $('#wpRun').disabled=!t.length;
 }
-function openWebp(){
+function openWebp(scope){
   const mp=$('#menuPop'); if(mp){mp.classList.remove('on','show');}
   if(mode!=='fsa'||!dirHandle){ toast('먼저 저장 폴더를 연결하세요',false); return; }
+  const selOpt=$('#wpScope').querySelector('option[value="sel"]');
+  if(selOpt) selOpt.disabled=!sel.size;
+  $('#wpScope').value=(scope==='sel'&&sel.size)?'sel':'all';
   wpAbort=false;
   $('#wpProg').style.display='none'; $('#wpStat').textContent=''; $('#wpBar').style.width='0';
   $('#wpRun').style.display=''; $('#wpStop').style.display='none'; $('#wpRun').disabled=false;
@@ -858,7 +866,8 @@ async function wpRun(){
   wpBusy=false;
   $('#wpStop').style.display='none'; $('#wpCancel').style.display=''; $('#wpRun').style.display=''; wpInfo();
 }
-if($('#webpBtn')) $('#webpBtn').onclick=openWebp;
+if($('#webpBtn')) $('#webpBtn').onclick=()=>openWebp('all');
+if($('#selWebp')) $('#selWebp').onclick=()=>{ if(!sel.size){toast('먼저 사진을 선택하세요',false);return;} openWebp('sel'); };
 if($('#wpQ')) $('#wpQ').oninput=()=>{ $('#wpQv').textContent=$('#wpQ').value; };
 if($('#wpScope')) $('#wpScope').onchange=wpInfo;
 if($('#wpRun')) $('#wpRun').onclick=wpRun;
